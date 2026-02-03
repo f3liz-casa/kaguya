@@ -1,0 +1,32 @@
+{
+  "name": "kaguya-app",
+  "version": "0.1.0",
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    }
+  ],
+  "package-specs": [
+    {
+      "module": "esmodule",
+      "in-source": false
+    }
+  ],
+  "suffix": ".res.js",
+  "bs-dependencies": [
+    "@rescript/core",
+    "rescript-misskey",
+    "rescript-mfm"
+  ],
+  "jsx": {
+    "version": 4,
+    "module": "Preact"
+  },
+  "warnings": {
+    "error": "+101"
+  },
+  "bsc-flags": [
+    "-open RescriptCore"
+  ]
+}

@@ -1,0 +1,11 @@
+# .wrangler - Wrangler local state and cache
+.wrangler/
+
+# Cloudflare Workers KV namespace data
+.mf/
+
+# Environment files (if used)
+.dev.vars
+
+# Wrangler logs
+wrangler.log

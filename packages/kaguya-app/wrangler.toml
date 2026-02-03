@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: MPL-2.0
+# Cloudflare Workers configuration for Kaguya
+
+name = "kaguya-app"
+main = "worker/index.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets configuration
+assets = { directory = "./dist", binding = "ASSETS" }
+
+# For custom domains, add routes here:
+# routes = [
+#   { pattern = "example.com/*", zone_name = "example.com" }
+# ]
+
+# Environment variables (if needed)
+# [env.production]
+# name = "kaguya-production"

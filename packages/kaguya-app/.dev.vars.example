@@ -1,0 +1,7 @@
+# .dev.vars.example
+# Copy this file to .dev.vars and fill in your values for local development
+# These environment variables will be available in your worker during local development
+
+# Example variables (uncomment and set as needed):
+# API_KEY=your-api-key-here
+# DEBUG=true

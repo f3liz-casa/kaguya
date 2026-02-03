@@ -1,0 +1,15 @@
+{
+  "name": "kaguya-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kaguya monorepo",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm -r dev",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

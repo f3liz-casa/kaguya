@@ -1,0 +1,26 @@
+{
+  "name": "rescript-misskey",
+  "version": "0.1.0",
+  "description": "ReScript bindings and idiomatic wrappers for misskey-js",
+  "keywords": [
+    "misskey",
+    "rescript",
+    "bindings",
+    "activitypub",
+    "fediverse"
+  ],
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "build": "rescript",
+    "clean": "rescript clean",
+    "watch": "rescript build -w"
+  },
+  "dependencies": {
+    "misskey-js": "^2026.1.0-beta.0"
+  },
+  "devDependencies": {
+    "@rescript/core": "^1.6.1",
+    "rescript": "^11.1.4"
+  }
+}
