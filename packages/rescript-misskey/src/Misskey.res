@@ -85,7 +85,8 @@ module Notes = {
     replyId->Option.forEach(v => params->Dict.set("replyId", v->JSON.Encode.string))
     renoteId->Option.forEach(v => params->Dict.set("renoteId", v->JSON.Encode.string))
     
-    client.apiClient(~url="notes/create", ~method_="POST", ~body=params->JSON.Encode.object, ())
+    let apiClient = client.apiClient
+    apiClient(~url="notes/create", ~method_="POST", ~body=params->JSON.Encode.object, ())
     ->Promise.then(json => Ok(json)->Promise.resolve)
     ->Promise.catch(_err => Error(%raw(`String(_err)`))->Promise.resolve)
   }
@@ -98,7 +99,8 @@ module Notes = {
     let params = Dict.make()
     params->Dict.set("noteId", noteId->JSON.Encode.string)
     
-    client.apiClient(~url="notes/delete", ~method_="POST", ~body=params->JSON.Encode.object, ())
+    let apiClient = client.apiClient
+    apiClient(~url="notes/delete", ~method_="POST", ~body=params->JSON.Encode.object, ())
     ->Promise.then(json => Ok(json)->Promise.resolve)
     ->Promise.catch(_err => Error(%raw(`String(_err)`))->Promise.resolve)
   }
@@ -155,7 +157,8 @@ module Notes = {
       })
     })
     
-    client.apiClient(~url=endpoint, ~method_="POST", ~body=params->JSON.Encode.object, ())
+    let apiClient = client.apiClient
+    apiClient(~url=endpoint, ~method_="POST", ~body=params->JSON.Encode.object, ())
     ->Promise.then(json => Ok(json)->Promise.resolve)
     ->Promise.catch(_err => Error(%raw(`String(_err)`))->Promise.resolve)
   }
@@ -172,7 +175,8 @@ module Notes = {
     params->Dict.set("noteId", noteId->JSON.Encode.string)
     params->Dict.set("reaction", reaction->JSON.Encode.string)
     
-    client.apiClient(~url="notes/reactions/create", ~method_="POST", ~body=params->JSON.Encode.object, ())
+    let apiClient = client.apiClient
+    apiClient(~url="notes/reactions/create", ~method_="POST", ~body=params->JSON.Encode.object, ())
     ->Promise.then(json => Ok(json)->Promise.resolve)
     ->Promise.catch(_err => Error(%raw(`String(_err)`))->Promise.resolve)
   }
@@ -185,7 +189,8 @@ module Notes = {
     let params = Dict.make()
     params->Dict.set("noteId", noteId->JSON.Encode.string)
     
-    client.apiClient(~url="notes/reactions/delete", ~method_="POST", ~body=params->JSON.Encode.object, ())
+    let apiClient = client.apiClient
+    apiClient(~url="notes/reactions/delete", ~method_="POST", ~body=params->JSON.Encode.object, ())
     ->Promise.then(json => Ok(json)->Promise.resolve)
     ->Promise.catch(_err => Error(%raw(`String(_err)`))->Promise.resolve)
   }
@@ -320,7 +325,8 @@ let request = (
   ~params: JSON.t=JSON.Encode.object(Dict.make()),
   (),
 ): promise<result<JSON.t, string>> => {
-  client.apiClient(~url=endpoint, ~method_="POST", ~body=params, ())
+  let apiClient = client.apiClient
+  apiClient(~url=endpoint, ~method_="POST", ~body=params, ())
   ->Promise.then(json => Ok(json)->Promise.resolve)
   ->Promise.catch(_err => Error(%raw(`String(_err)`))->Promise.resolve)
 }
