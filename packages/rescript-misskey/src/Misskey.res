@@ -325,8 +325,7 @@ let request = (
   ~params: JSON.t=JSON.Encode.object(Dict.make()),
   (),
 ): promise<result<JSON.t, string>> => {
-  let apiClient = client.apiClient
-  apiClient(~url=endpoint, ~method_="POST", ~body=params, ())
+  client.apiClient(~url=endpoint, ~method_="POST", ~body=params, ())
   ->Promise.then(json => Ok(json)->Promise.resolve)
   ->Promise.catch(_err => Error(%raw(`String(_err)`))->Promise.resolve)
 }

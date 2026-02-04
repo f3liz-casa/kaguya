@@ -7,7 +7,7 @@ type fetchOptions = {
   body: option<JSON.t>,
 }
 
-type fetchFn = (
+type fetchFn = @uncurry (
   ~url: string,
   ~method_: string,
   ~body: JSON.t=?,
