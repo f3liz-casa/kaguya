@@ -47,12 +47,12 @@ let workWithUsers = () => {
   Console.log("\n=== Working with User Data ===\n")
 
   // Simulate user data
-  let user1 = {
+  let _user1 = {
     "username": "alice",
     "host": JSON.Encode.null,
   }
 
-  let user2 = {
+  let _user2 = {
     "username": "bob",
     "host": "misskey.example",
   }

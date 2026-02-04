@@ -1,0 +1,42 @@
+{
+  "name": "rescript-misskey",
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": false
+    },
+    {
+      "dir": "src/types",
+      "subdirs": false
+    },
+    {
+      "dir": "src/generated",
+      "subdirs": false
+    },
+    {
+      "dir": "src/bindings",
+      "subdirs": false
+    },
+    {
+      "dir": "src/stream",
+      "subdirs": false
+    },
+    {
+      "dir": "examples",
+      "subdirs": true
+    }
+  ],
+  "package-specs": [
+    {
+      "module": "esmodule",
+      "in-source": false
+    }
+  ],
+  "suffix": ".res.js",
+  "dependencies": [
+    "sury"
+  ],
+  "warnings": {
+    "error": "+101"
+  }
+}

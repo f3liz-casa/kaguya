@@ -3,8 +3,6 @@
 
 open MisskeyJS_Common
 
-module Bindings = MisskeyJS_API_Bindings
-
 // ============================================================
 // Types
 // ============================================================
@@ -220,10 +218,10 @@ external encodeURIComponent: string => string = "encodeURIComponent"
 module Fetch = {
   type response
   type requestInit = {method: [#GET | #POST]}
-  
+
   @val
   external fetch: (string, requestInit) => promise<response> = "fetch"
-  
+
   module Response = {
     @get external ok: response => bool = "ok"
     @get external status: response => int = "status"
@@ -250,7 +248,7 @@ let generateSessionId = (): string => {
   let hex = ref("")
   for i in 0 to 15 {
     let byte = Js.TypedArray2.Uint8Array.unsafe_get(array, i)
-    let hexByte = byte->Int.toStringWithRadix(~radix=16)
+    let hexByte = byte->Int.toString(~radix=16)
     let padded = String.length(hexByte) == 1 ? "0" ++ hexByte : hexByte
     hex := hex.contents ++ padded
   }
@@ -277,7 +275,7 @@ let generateAuthUrl = (
 
   // Build auth URL manually according to MiAuth spec
   // Format: {origin}/miauth/{session}?name={name}&permission={perm1,perm2,...}
-  let permissionParam = permissionStrings->Array.joinWith(",")
+  let permissionParam = permissionStrings->Array.join(",")
   let encodedName = encodeURIComponent(name)
   let encodedPermission = encodeURIComponent(permissionParam)
 
@@ -304,22 +302,25 @@ let generateAuthUrl = (
 
 // Step 2: Check if user has authorized
 // POST to /api/miauth/{session}/check to get the token
-let check = async (
-  ~origin: string,
-  ~sessionId: string,
-): result<checkResult, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let check = async (~origin: string, ~sessionId: string): result<
+  checkResult,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   // According to the MiAuth spec, we need to POST to /api/miauth/{session}/check
   // This is NOT a regular API endpoint, so we use fetch directly
-  
+
   try {
     let url = `${origin}/api/miauth/${sessionId}/check`
-    
-    let response = await Fetch.fetch(url, {
-      method: #POST,
-    })
-    
+
+    let response = await Fetch.fetch(
+      url,
+      {
+        method: #POST,
+      },
+    )
+
     let ok = response->Fetch.Response.ok
-    
+
     if !ok {
       // Log the status code for debugging
       let status = response->Fetch.Response.status
@@ -355,8 +356,8 @@ let check = async (
     }
   } catch {
   | error => {
-      let msg = switch error->Exn.asJsExn {
-      | Some(jsExn) => Exn.message(jsExn)->Option.getOr("Unknown error")
+      let msg = switch error->JsExn.fromException {
+      | Some(jsExn) => JsExn.message(jsExn)->Option.getOr("Unknown error")
       | None => "Unknown error"
       }
       Console.error2("MiAuth check: Error during fetch", msg)

@@ -60,28 +60,14 @@ let workWithEnums = () => {
   Console.log2("Muted reason:", mutedReason->Constants.MutedNoteReason.toString)
 }
 
-// Nyaize text (cat mode)
+// Nyaize text (cat mode) - REMOVED
+// Note: nyaize function was client-side specific functionality from misskey-js
+// It has been removed in the native ReScript implementation as it's typically
+// handled client-side by the Misskey frontend
 let testNyaize = () => {
-  Console.log("\n=== Nyaize Text ===\n")
-
-  let normalText = "Hello! I am using Misskey!"
-  let nyaText = nyaize(normalText)
-
-  Console.log2("Normal text:", normalText)
-  Console.log2("Nya text:", nyaText)
-
-  // More examples
-  let texts = [
-    "Good morning!",
-    "How are you doing?",
-    "This is amazing!",
-    "I love programming",
-  ]
-
-  Console.log("\nMore examples:")
-  texts->Array.forEach(text => {
-    Console.log2(`  "${text}" =>`, nyaize(text))
-  })
+  Console.log("\n=== Nyaize Text (Removed) ===\n")
+  Console.log("The nyaize function has been removed as it was client-side specific.")
+  Console.log("This functionality is typically handled by the Misskey web frontend.")
 }
 
 // Check permissions
@@ -98,7 +84,10 @@ let checkPermissions = () => {
   })
 
   // List all admin permissions
-  let adminPerms = permissions->Array.filter(p => p->String.startsWith("read:admin:") || p->String.startsWith("write:admin:"))
+  let adminPerms =
+    permissions->Array.filter(p =>
+      p->String.startsWith("read:admin:") || p->String.startsWith("write:admin:")
+    )
   Console.log(`\nAdmin permissions (${adminPerms->Array.length->Int.toString} total):`)
   adminPerms->Array.slice(~start=0, ~end=5)->Array.forEach(p => Console.log(`  - ${p}`))
   Console.log("  ...")

@@ -1,13 +1,15 @@
 // Example: Streaming with rescript-misskey (Unified API)
+//
+// ⚠️ NOTE: This example uses the DEPRECATED MisskeyJS API.
+// For new code, use the simpler Misskey API instead!
+//
+// See examples/NewAPIExample.res or examples/QuickStart.res for the new API.
+// This example is kept for reference and backward compatibility.
 
 open MisskeyJS
 
 // Create a unified client (handles both API and streaming)
-let client = Client.make(
-  ~origin="https://misskey.example",
-  ~credential="your-token",
-  (),
-)
+let client = Client.make(~origin="https://misskey.example", ~credential="your-token", ())
 
 // Connection status handlers
 let setupConnectionHandlers = () => {
@@ -25,7 +27,8 @@ let listenToNotifications = () => {
   Console.log("Listening to notifications...")
 
   // Subscribe returns a subscription that can be piped to attach handlers
-  let sub = client
+  let sub =
+    client
     ->Notifications.subscribe
     ->Notifications.onNotification(notif => {
       Console.log2("🔔 New notification:", notif)
@@ -59,7 +62,8 @@ let listenToNotifications = () => {
 let listenToHomeTimeline = () => {
   Console.log("Listening to home timeline...")
 
-  let sub = client
+  let sub =
+    client
     ->Timeline.subscribe(
       ~type_=#home,
       ~params={
@@ -79,7 +83,8 @@ let listenToHomeTimeline = () => {
 let listenToLocalTimeline = () => {
   Console.log("Listening to local timeline...")
 
-  let sub = client
+  let sub =
+    client
     ->Timeline.subscribe(
       ~type_=#local,
       ~params={
@@ -100,7 +105,8 @@ let listenToLocalTimeline = () => {
 let listenToGlobalTimeline = () => {
   Console.log("Listening to global timeline...")
 
-  let sub = client
+  let sub =
+    client
     ->Timeline.subscribe(
       ~type_=#global,
       ~params={
@@ -120,7 +126,8 @@ let listenToGlobalTimeline = () => {
 let listenToDrive = () => {
   Console.log("Listening to drive events...")
 
-  let sub = client
+  let sub =
+    client
     ->Stream.Drive.use
     ->Stream.Drive.onFileCreated(file => {
       Console.log2("📁 File created:", file)
@@ -145,7 +152,8 @@ let listenToDrive = () => {
 let listenToServerStats = () => {
   Console.log("Listening to server stats...")
 
-  let sub = client
+  let sub =
+    client
     ->Stream.ServerStats.use
     ->Stream.ServerStats.onStats(statsData => {
       Console.log2("📊 Server stats:", statsData)

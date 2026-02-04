@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MPL-2.0",
   "scripts": {
-    "dev": "concurrently \"rescript build -w\" \"vite\"",
+    "dev": "vite",
     "build:res": "rescript",
     "build:vite": "vite build",
     "build": "rescript && vite build",
@@ -19,16 +19,15 @@
   "dependencies": {
     "@preact/signals": "^1.3.1",
     "preact": "^10.25.4",
-    "rescript-misskey": "file:../rescript-misskey",
     "rescript-mfm": "file:../rescript-mfm",
+    "rescript-misskey": "file:../rescript-misskey",
     "wouter-preact": "^3.3.5"
   },
   "devDependencies": {
-    "@jihchi/vite-plugin-rescript": "^7.2.0",
+    "@jihchi/vite-plugin-rescript": "8.0.0-beta.2",
     "@preact/preset-vite": "^2.9.4",
-    "@rescript/core": "^1.6.1",
     "concurrently": "^9.1.2",
-    "rescript": "^11.1.4",
+    "rescript": "^12.1.0",
     "typescript": "^5.7.3",
     "vite": "^6.0.7",
     "wrangler": "^3.94.0"

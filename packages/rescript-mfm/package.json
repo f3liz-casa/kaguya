@@ -20,7 +20,6 @@
     "mfm-js": "^0.25.0"
   },
   "devDependencies": {
-    "@rescript/core": "^1.6.1",
-    "rescript": "^11.1.4"
+    "rescript": "^12.1.0"
   }
 }

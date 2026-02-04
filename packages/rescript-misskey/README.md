@@ -1,31 +1,49 @@
 # rescript-misskey
 
-ReScript bindings and idiomatic wrappers for [misskey-js](https://github.com/misskey-dev/misskey), the official Misskey API client library.
+**Pure ReScript** Misskey API client with a **clean, intuitive API** - discoverable through autocompletion!
 
-> **Status**: ✅ Full port complete with comprehensive API coverage, streaming support, and extensive documentation!
+> **Status**: ✅ Complete native ReScript implementation • Zero dependencies • Ultra-simple API
 
-## Quick Links
+> ⚠️ **API Change Notice**: The old `MisskeyJS` API is deprecated. Use the new `Misskey` API shown below. See [MIGRATION.md](MIGRATION.md) for the migration guide.
 
-- 📚 [API Documentation](docs/API.md) - Complete API reference
-- 🚀 [Quick Start Guide](QUICKSTART.md) - Get started in 5 minutes
-- 💡 [Examples](examples/) - Real-world usage examples
-- 🤝 [Contributing](CONTRIBUTING.md) - How to contribute
-- 📋 [Project Summary](PROJECT_SUMMARY.md) - Architecture overview
+## Why rescript-misskey?
 
-## Architecture
+✨ **Discoverable**: Just type and let autocompletion guide you  
+🎯 **Simple**: Common operations are 1-2 lines  
+🔒 **Type-safe**: Full ReScript type checking  
+📦 **Zero dependencies**: No misskey-js required  
+⚡ **Fast**: Native WebSocket implementation  
+🧩 **Flexible**: Optional parameters for advanced use
 
-This library follows a two-layer approach similar to Rust's `-sys` pattern:
+## Quick Start
 
-1. **Low-level bindings** (`*_Bindings` modules): Direct FFI bindings to misskey-js with minimal abstraction
-2. **High-level wrappers** (public API): Idiomatic ReScript interfaces with type safety, result types, and ReScript conventions
+```rescript
+// Connect
+let client = Misskey.connect("https://misskey.io", ~token="your-token")
+
+// Post a note
+await client->Misskey.Notes.create("Hello, Misskey!", ())
+
+// Stream timeline
+let sub = client->Misskey.Stream.timeline(#home, note => {
+  Console.log2("New note!", note)
+})
+
+// Cleanup
+sub.dispose()
+```
+
+**That's it!** Everything else you discover through autocompletion.
+
+> 💡 **Tip**: Use qualified names (`Misskey.connect`, `Misskey.Notes`) instead of `open Misskey` to avoid naming conflicts.
 
 ## Installation
 
 ```bash
-npm install rescript-misskey misskey-js
+npm install rescript-misskey
 ```
 
-Add to your `bsconfig.json`:
+Add to your `rescript.json`:
 
 ```json
 {
@@ -33,156 +51,163 @@ Add to your `bsconfig.json`:
 }
 ```
 
-## Quick Start
+## Examples
 
-### API Client
+### Post Notes
 
 ```rescript
-open MisskeyJS
+// Simple post
+await client->Misskey.Notes.create("Hello!", ())
 
-// Create an API client
-let api = API.make(
-  ~origin="https://misskey.example",
-  ~credential=Some("your-token"),
+// With options
+await client->Misskey.Notes.create(
+  "Private post",
+  ~visibility=#followers,
+  ~cw="Content warning",
   ()
 )
 
-// Make API requests with Result types
-let result = await api->API.Notes.create(~params={
-  text: Some("Hello from ReScript!"),
-  visibility: Some(#public),
-})
+// Reply to a note
+await client->Misskey.Notes.create(
+  "Great post!",
+  ~replyId="note-id",
+  ()
+)
+
+// React to a note
+await client->Misskey.Notes.react("note-id", "👍")
+```
+
+### Read Timelines
+
+```rescript
+// Get home timeline
+let result = await client->Misskey.Notes.timeline(#home, ~limit=20, ())
 
 switch result {
-| Ok(note) => Console.log("Note created!", note)
-| Error(#APIError(err)) => Console.log("API Error:", err.message)
-| Error(#UnknownError(_)) => Console.log("Unknown error")
+| Ok(notes) => Console.log(notes)
+| Error(msg) => Console.error(msg)
 }
+
+// Other timelines: #local, #global, #hybrid
+await client->Misskey.Notes.timeline(#local, ())
 ```
 
-### Streaming
+### Real-time Streaming
 
 ```rescript
-open MisskeyJS
-
-// Create a stream connection
-let stream = Stream.make(
-  ~origin="https://misskey.example",
-  ~user=Some({token: "your-token"}),
-  ()
-)
-
-// Connect to main channel for notifications
-let main = stream->Stream.Main.use
-
-main->Stream.Main.onNotification(notification => {
-  Console.log("New notification:", notification)
+// Stream timeline
+let homeSub = client->Misskey.Stream.timeline(#home, note => {
+  Console.log2("New note!", note)
 })
 
-// Connect to home timeline
-let home = stream->Stream.HomeTimeline.use(
-  ~params=Some({withRenotes: Some(true)}),
-  ()
-)
-
-home->Stream.HomeTimeline.onNote(note => {
-  Console.log("New note:", note)
+// Stream notifications
+let notifSub = client->Misskey.Stream.notifications(notif => {
+  Console.log2("Notification!", notif)
 })
+
+// Connection events
+client->Misskey.Stream.onConnected(() => Console.log("Connected!"))
+client->Misskey.Stream.onDisconnected(() => Console.log("Disconnected!"))
 
 // Cleanup
-main->Stream.Main.dispose
-home->Stream.HomeTimeline.dispose
-stream->Stream.close
+homeSub.dispose()
+notifSub.dispose()
 ```
 
-**👉 See [QUICKSTART.md](QUICKSTART.md) for a complete guide!**
+## API Overview
 
-## Module Structure
+### Connection
 
-```
-MisskeyJS/
-├── API.res                    // High-level API client
-├── Stream.res                 // High-level streaming client
-├── Channel.res                // Channel connection interface
-├── Types/
-│   ├── User.res              // User entity types
-│   ├── Note.res              // Note entity types
-│   ├── Notification.res      // Notification types
-│   ├── Drive.res             // Drive types
-│   └── ...
-├── Acct.res                  // Account utilities
-├── Constants.res             // Constants and enums
-└── Internal/
-    ├── API_Bindings.res      // Low-level API bindings
-    ├── Stream_Bindings.res   // Low-level stream bindings
-    └── ...
+```rescript
+// Public instance
+let client = Misskey.connect("https://misskey.io")
+
+// Authenticated
+let myClient = Misskey.connect("https://misskey.io", ~token="abc123")
 ```
 
-## Features
+### Notes API
 
-### API Client
-- ✅ Server metadata and user info
-- ✅ Notes: create, delete, show, reactions
-- ✅ Timelines: home, local, global
-- ✅ Users: show, follow, unfollow
-- ✅ Notifications: get, mark as read
-- ✅ Drive: files and folders management
-- ✅ Result-based error handling
+```rescript
+client->Misskey.Notes.create(text, ~visibility?, ~cw?, ~localOnly?, ~replyId?, ~renoteId?, ())
+client->Misskey.Notes.delete(noteId)
+client->Misskey.Notes.timeline(#home | #local | #global | #hybrid, ~limit?, ~sinceId?, ~untilId?, ())
+client->Misskey.Notes.react(noteId, reaction)
+```
 
-### Streaming (WebSocket)
-- ✅ Main channel (notifications, mentions, etc.)
-- ✅ Timeline channels (home, local, global, hybrid)
-- ✅ Drive events (files, folders)
-- ✅ Server stats (admin)
-- ✅ Auto-reconnection support
+### Stream API
 
-### Type Safety
-- ✅ Comprehensive entity types (User, Note, Notification, Drive)
-- ✅ Polymorphic variants for enums
-- ✅ Result types for error handling
-- ✅ Labeled arguments throughout
+```rescript
+client->Misskey.Stream.timeline(type_, onNote) // Returns {dispose: unit => unit}
+client->Misskey.Stream.notifications(onNotification)
+client->Misskey.Stream.onConnected(callback)
+client->Misskey.Stream.onDisconnected(callback)
+Misskey.Stream.close(client)
+```
 
-### Developer Experience
-- ✅ Idiomatic ReScript API
-- ✅ Complete documentation with examples
-- ✅ Full TypeScript interop
-- ✅ Tree-shakeable exports
+## Discover Through Autocompletion
+
+The API is designed to be self-documenting. Just start typing:
+
+1. Type: `client->Misskey.Notes.`
+2. See: `create`, `delete`, `timeline`, `react`
+3. Pick one and see clear parameters with documentation
+4. Done!
+
+Every function has:
+- Clear, descriptive names
+- Inline documentation
+- Sensible defaults
+- Type-safe parameters
+
+## Architecture
+
+This is a **pure ReScript implementation**:
+
+- 🎯 Native WebSocket bindings - No JavaScript dependencies
+- 📦 OpenAPI-generated types - Auto-generated from official Misskey spec
+- 🔒 Full type safety - ReScript all the way down
+- ⚡ Better tree-shaking - Smaller bundle sizes
 
 ## Examples
 
-Check out the [examples/](examples/) directory for complete examples:
+Check out the [examples/](examples/) directory:
 
-- **[BasicAPIExample.res](examples/BasicAPIExample.res)** - API client usage (notes, users, timelines)
-- **[StreamingExample.res](examples/StreamingExample.res)** - WebSocket streaming and channels
-- **[AcctExample.res](examples/AcctExample.res)** - Account identifier parsing
-- **[ConstantsExample.res](examples/ConstantsExample.res)** - Constants and utilities
+- **[QuickStart.res](examples/QuickStart.res)** - Get started in 60 seconds
+- **[NewAPIExample.res](examples/NewAPIExample.res)** - Complete API tour
+- **[WebSocketTestExample.res](examples/WebSocketTestExample.res)** - Test WebSocket connections
+
+## Migrating from Old API
+
+If you're using the old `MisskeyJS` API (with `MisskeyJS.Client.make`, etc.), it's time to migrate to the simpler `Misskey` API!
+
+**Quick comparison:**
+```rescript
+// OLD (deprecated)
+open MisskeyJS
+let client = Client.make(~origin="https://misskey.io", ~credential="token", ())
+
+// NEW (recommended)
+let client = Misskey.connect("https://misskey.io", ~token="token")
+```
+
+**See the complete [Migration Guide](MIGRATION.md)** for:
+- Step-by-step migration instructions
+- API mapping reference
+- Before/after examples
+- Error handling changes
+
+The old API still works but is deprecated and will be removed in v1.0.
 
 ## Documentation
 
-- **[API Documentation](docs/API.md)** - Complete API reference with all endpoints
-- **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes
-- **[Contributing Guide](CONTRIBUTING.md)** - How to add features and contribute
-- **[Project Summary](PROJECT_SUMMARY.md)** - Architecture and design decisions
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# Watch mode
-npm run watch
-
-# Clean
-npm run clean
-```
+- [API Reference](docs/API.md) - Complete API documentation
+- [Migration Guide](MIGRATION.md) - Migrating from old API
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
@@ -190,4 +215,6 @@ MIT
 
 ## Credits
 
-This library provides ReScript bindings for [misskey-js](https://github.com/misskey-dev/misskey/tree/develop/packages/misskey-js), developed by the Misskey team. Misskey is a decentralized social platform that's part of the Fediverse.
+Pure ReScript implementation of the Misskey API client. Built from the ground up for simplicity and type safety.
+
+Misskey is a decentralized social platform - part of the Fediverse. Learn more at [misskey-hub.net](https://misskey-hub.net/).

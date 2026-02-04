@@ -1,8 +1,15 @@
 // Unified client that manages both REST API and WebSocket streaming
 // This is the main entry point for most Misskey operations
+//
+// ⚠️ DEPRECATION NOTICE ⚠️
+// This module is DEPRECATED. Use the new Misskey API instead:
+//
+// OLD: MisskeyJS.Client.make(~origin, ~credential, ())
+// NEW: Misskey.connect(origin, ~token)
+//
+// See MIGRATION.md for the complete migration guide.
 
-module API_Bindings = MisskeyJS_API_Bindings
-module Stream_Bindings = MisskeyJS_Stream_Bindings
+module Stream_Bindings = NativeStreamBindings
 
 // ============================================================
 // Metrics Callback Types
@@ -20,11 +27,11 @@ type metricsCallback = apiCallMetrics => unit
 // Client Type
 // ============================================================
 
-// Internal representation
+// Internal representation - now uses generated fetch instead of misskey-js
 type rec t = {
   origin: string,
   credential: option<string>,
-  apiClient: API_Bindings.t,
+  fetch: MisskeyJS_Fetch.fetchFn,
   mutable streamClient: option<Stream_Bindings.stream>,
   mutable metricsCallback: option<metricsCallback>,
 }
@@ -35,14 +42,11 @@ type rec t = {
 
 // Create a unified client
 let make = (~origin: string, ~credential: option<string>=?, ()): t => {
-  let apiClient = API_Bindings.make({
-    origin,
-    ?credential,
-  })
+  let fetch = MisskeyJS_Fetch.make(~origin, ~credential?)
   {
     origin,
     credential,
-    apiClient,
+    fetch,
     streamClient: None,
     metricsCallback: None,
   }
@@ -75,6 +79,7 @@ let trackApiCall = (client: t, ~endpoint: string, ~durationMs: float, ~success: 
 // ============================================================
 
 // Wrapped request that tracks metrics
+// This is now a thin wrapper around the fetch function
 let request = async (
   client: t,
   ~endpoint: string,
@@ -82,14 +87,15 @@ let request = async (
   ~credential: option<string>=?,
 ): JSON.t => {
   let startTime = Date.now()
-  
+
   try {
-    let result = switch (params, credential) {
-    | (Some(p), Some(c)) => await API_Bindings.request(client.apiClient, ~endpoint, ~params=p, ~credential=c)
-    | (Some(p), None) => await API_Bindings.request(client.apiClient, ~endpoint, ~params=p)
-    | (None, Some(c)) => await API_Bindings.request(client.apiClient, ~endpoint, ~credential=c)
-    | (None, None) => await API_Bindings.request(client.apiClient, ~endpoint)
-    }
+    // Use the generated fetch function
+    let result = await client.fetch(
+      ~url=endpoint,
+      ~method_="POST",
+      ~body=?params,
+      ()
+    )
     let duration = Date.now() -. startTime
     trackApiCall(client, ~endpoint, ~durationMs=duration, ~success=true)
     result
@@ -97,7 +103,7 @@ let request = async (
   | error => {
       let duration = Date.now() -. startTime
       trackApiCall(client, ~endpoint, ~durationMs=duration, ~success=false)
-      raise(error)
+      throw(error)
     }
   }
 }
@@ -108,15 +114,15 @@ let request = async (
 let origin = (client: t): string => client.origin
 let credential = (client: t): option<string> => client.credential
 
-// Get the underlying API client (for advanced use)
-let apiClient = (client: t): API_Bindings.t => client.apiClient
+// Get the fetch function (for use with generated code)
+let fetch = (client: t): MisskeyJS_Fetch.fetchFn => client.fetch
 
 // Get or lazily initialize the stream client
 let streamClient = (client: t): Stream_Bindings.stream => {
   switch client.streamClient {
   | Some(stream) => stream
   | None => {
-      let user = client.credential->Option.map(t => ({token: t}: Stream_Bindings.streamUser))
+      let user = client.credential->Option.map((t): Stream_Bindings.streamUser => {token: t})
       let stream = Stream_Bindings.make(~origin=client.origin, ~user?, ())
       client.streamClient = Some(stream)
       stream

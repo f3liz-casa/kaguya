@@ -44,17 +44,17 @@ let trackApiCall = (~endpoint: string, ~duration: float, ~success: bool): unit =
     timestamp: Date.now(),
     success,
   }
-  
+
   let current = PreactSignals.value(apiCalls)
   let updated = Array.concat(current, [call])
-  
+
   // Keep only last 100
   let trimmed = if Array.length(updated) > 100 {
-    updated->Array.sliceToEnd(~start=Array.length(updated) - 100)
+    updated->Array.slice(~start=Array.length(updated) - 100)
   } else {
     updated
   }
-  
+
   PreactSignals.setValue(apiCalls, trimmed)
   PreactSignals.setValue(totalApiCalls, PreactSignals.value(totalApiCalls) + 1)
 }
@@ -66,28 +66,25 @@ let trackRender = (~component: string, ~duration: float): unit => {
     duration,
     timestamp: Date.now(),
   }
-  
+
   let current = PreactSignals.value(renderMetrics)
   let updated = Array.concat(current, [metric])
-  
+
   // Keep only last 100
   let trimmed = if Array.length(updated) > 100 {
-    updated->Array.sliceToEnd(~start=Array.length(updated) - 100)
+    updated->Array.slice(~start=Array.length(updated) - 100, ~end=Array.length(updated))
   } else {
     updated
   }
-  
+
   PreactSignals.setValue(renderMetrics, trimmed)
   PreactSignals.setValue(totalRenders, PreactSignals.value(totalRenders) + 1)
 }
 
 // Measure API call performance
-let measureApiCall = async (
-  ~endpoint: string,
-  ~fn: unit => promise<'a>,
-): 'a => {
+let measureApiCall = async (~endpoint: string, ~fn: unit => promise<'a>): 'a => {
   let start = Date.now()
-  
+
   try {
     let result = await fn()
     let duration = Date.now() -. start
@@ -97,7 +94,7 @@ let measureApiCall = async (
   | error => {
       let duration = Date.now() -. start
       trackApiCall(~endpoint, ~duration, ~success=false)
-      raise(error)
+      throw(error)
     }
   }
 }
@@ -106,15 +103,15 @@ let measureApiCall = async (
 // Usage: let _ = useRenderMetrics("ComponentName")
 let useRenderMetrics = (~component: string): unit => {
   let renderStartRef = PreactHooks.useRef(Date.now())
-  
+
   // Track render completion (runs after render)
   PreactHooks.useEffect0(() => {
     let duration = Date.now() -. renderStartRef.current
     trackRender(~component, ~duration)
-    
+
     // Update ref for next render
     renderStartRef.current = Date.now()
-    
+
     None
   })
 }

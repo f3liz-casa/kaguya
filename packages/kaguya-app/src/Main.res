@@ -7,6 +7,6 @@ external getElementById: string => Nullable.t<Dom.element> = "getElementById"
 
 // Render the app to the DOM
 switch getElementById("root")->Nullable.toOption {
-| Some(root) => PreactRender.render(<App />, root)
+| Some(root) => PreactRender.render(<KaguyaApp />, root)
 | None => Console.error("Could not find root element")
 }

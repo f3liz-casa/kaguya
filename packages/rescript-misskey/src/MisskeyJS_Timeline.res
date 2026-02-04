@@ -3,15 +3,20 @@
 
 open MisskeyJS_Common
 
-module API_Bindings = MisskeyJS_API_Bindings
-module Stream_Bindings = MisskeyJS_Stream_Bindings
+// Import generated API modules (not currently used - using Client.request instead)
+// module GeneratedNotes = Generated.Notes
+// module GeneratedAntennas = Generated.Antennas
+// module GeneratedChannels = Generated.Channels
+// module GeneratedLists = Generated.Lists
+
+module Stream_Bindings = NativeStreamBindings
 module Client = MisskeyJS_Client
 
 // Timeline types
 type timelineType = [
-  | #home 
-  | #local 
-  | #global 
+  | #home
+  | #local
+  | #global
   | #hybrid
   | #antenna(id)
   | #userList(id)
@@ -63,7 +68,7 @@ let getEndpoint = (type_: timelineType): string => {
 // Internal: Convert params to JSON for API request
 let encodeFetchParams = (type_: timelineType, params: fetchParams): JSON.t => {
   let obj = Dict.make()
-  
+
   // Add ID parameter for custom timelines
   switch type_ {
   | #antenna(id) => obj->Dict.set("antennaId", JSON.Encode.string(id))
@@ -71,7 +76,7 @@ let encodeFetchParams = (type_: timelineType, params: fetchParams): JSON.t => {
   | #channel(id) => obj->Dict.set("channelId", JSON.Encode.string(id))
   | _ => ()
   }
-  
+
   params.limit->Option.forEach(v => obj->Dict.set("limit", JSON.Encode.int(v)))
   params.sinceId->Option.forEach(v => obj->Dict.set("sinceId", JSON.Encode.string(v)))
   params.untilId->Option.forEach(v => obj->Dict.set("untilId", JSON.Encode.string(v)))
@@ -81,29 +86,29 @@ let encodeFetchParams = (type_: timelineType, params: fetchParams): JSON.t => {
   params.withFiles->Option.forEach(v => obj->Dict.set("withFiles", JSON.Encode.bool(v)))
   params.withReplies->Option.forEach(v => obj->Dict.set("withReplies", JSON.Encode.bool(v)))
   params.excludeNsfw->Option.forEach(v => obj->Dict.set("excludeNsfw", JSON.Encode.bool(v)))
-  params.includeMyRenotes->Option.forEach(v => obj->Dict.set("includeMyRenotes", JSON.Encode.bool(v)))
-  params.includeRenotedMyNotes->Option.forEach(v => obj->Dict.set("includeRenotedMyNotes", JSON.Encode.bool(v)))
-  params.includeLocalRenotes->Option.forEach(v => obj->Dict.set("includeLocalRenotes", JSON.Encode.bool(v)))
-  
+  params.includeMyRenotes->Option.forEach(v =>
+    obj->Dict.set("includeMyRenotes", JSON.Encode.bool(v))
+  )
+  params.includeRenotedMyNotes->Option.forEach(v =>
+    obj->Dict.set("includeRenotedMyNotes", JSON.Encode.bool(v))
+  )
+  params.includeLocalRenotes->Option.forEach(v =>
+    obj->Dict.set("includeLocalRenotes", JSON.Encode.bool(v))
+  )
+
   JSON.Encode.object(obj)
 }
 
 // Fetch timeline (REST)
-let fetch = async (
-  client: Client.t,
-  ~type_: timelineType,
-  ~params: fetchParams={},
-  (),
-): result<array<JSON.t>, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let fetch = async (client: Client.t, ~type_: timelineType, ~params: fetchParams={}, ()): result<
+  array<JSON.t>,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   let endpoint = getEndpoint(type_)
   let jsonParams = encodeFetchParams(type_, params)
-  
+
   try {
-    let result = await Client.request(
-      client,
-      ~endpoint,
-      ~params=jsonParams,
-    )
+    let result = await Client.request(client, ~endpoint, ~params=jsonParams)
     // Result is array<JSON.t>
     Ok(result->Obj.magic)
   } catch {
@@ -141,7 +146,7 @@ let getChannelName = (type_: timelineType): string => {
 // Internal: Encode subscribe params to JSON
 let encodeSubscribeParams = (type_: timelineType, params: subscribeParams): JSON.t => {
   let obj = Dict.make()
-  
+
   // Add ID parameter for custom timelines
   switch type_ {
   | #antenna(id) => obj->Dict.set("antennaId", JSON.Encode.string(id))
@@ -149,11 +154,11 @@ let encodeSubscribeParams = (type_: timelineType, params: subscribeParams): JSON
   | #channel(id) => obj->Dict.set("channelId", JSON.Encode.string(id))
   | _ => ()
   }
-  
+
   params.withRenotes->Option.forEach(v => obj->Dict.set("withRenotes", JSON.Encode.bool(v)))
   params.withFiles->Option.forEach(v => obj->Dict.set("withFiles", JSON.Encode.bool(v)))
   params.withReplies->Option.forEach(v => obj->Dict.set("withReplies", JSON.Encode.bool(v)))
-  
+
   JSON.Encode.object(obj)
 }
 
@@ -167,14 +172,10 @@ let subscribe = (
   let stream = Client.streamClient(client)
   let channelName = getChannelName(type_)
   let jsonParams = encodeSubscribeParams(type_, params)
-  
-  let connection = Stream_Bindings.useChannel(
-    ~stream,
-    ~channel=channelName,
-    ~params=jsonParams,
-    (),
-  )->Obj.magic
-  
+
+  let connection =
+    Stream_Bindings.useChannel(~stream, ~channel=channelName, ~params=jsonParams, ())->Obj.magic
+
   {connection: connection}
 }
 

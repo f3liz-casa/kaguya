@@ -3,8 +3,8 @@
 
 open MisskeyJS_Common
 
-module API_Bindings = MisskeyJS_API_Bindings
-module Stream_Bindings = MisskeyJS_Stream_Bindings
+// module API_Bindings = MisskeyJS_API_Bindings // Removed - no longer needed
+module Stream_Bindings = NativeStreamBindings
 module Client = MisskeyJS_Client
 
 // Subscription handle for streaming (Main channel)
@@ -53,7 +53,7 @@ let notificationTypeToString = (nt: notificationType): string =>
 // Internal: Encode fetch params to JSON
 let encodeFetchParams = (params: fetchParams): JSON.t => {
   let obj = Dict.make()
-  
+
   params.limit->Option.forEach(v => obj->Dict.set("limit", JSON.Encode.int(v)))
   params.sinceId->Option.forEach(v => obj->Dict.set("sinceId", JSON.Encode.string(v)))
   params.untilId->Option.forEach(v => obj->Dict.set("untilId", JSON.Encode.string(v)))
@@ -66,24 +66,19 @@ let encodeFetchParams = (params: fetchParams): JSON.t => {
     let arr = types->Array.map(t => JSON.Encode.string(notificationTypeToString(t)))
     obj->Dict.set("excludeTypes", JSON.Encode.array(arr))
   })
-  
+
   JSON.Encode.object(obj)
 }
 
 // Fetch notifications (REST)
-let fetch = async (
-  client: Client.t,
-  ~params: fetchParams={},
-  (),
-): result<array<JSON.t>, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let fetch = async (client: Client.t, ~params: fetchParams={}, ()): result<
+  array<JSON.t>,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   let jsonParams = encodeFetchParams(params)
-  
+
   try {
-    let result = await Client.request(
-      client,
-      ~endpoint="i/notifications",
-      ~params=jsonParams,
-    )
+    let result = await Client.request(client, ~endpoint="i/notifications", ~params=jsonParams)
     Ok(result->Obj.magic)
   } catch {
   | error =>
@@ -95,14 +90,12 @@ let fetch = async (
 }
 
 // Mark all notifications as read
-let markAllAsRead = async (
-  client: Client.t,
-): result<unit, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let markAllAsRead = async (client: Client.t): result<
+  unit,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   try {
-    let _ = await Client.request(
-      client,
-      ~endpoint="notifications/mark-all-as-read",
-    )
+    let _ = await Client.request(client, ~endpoint="notifications/mark-all-as-read")
     Ok()
   } catch {
   | error =>
@@ -120,12 +113,8 @@ let markAllAsRead = async (
 // Subscribe to notifications (Stream)
 let subscribe = (client: Client.t): subscription => {
   let stream = Client.streamClient(client)
-  let connection = Stream_Bindings.useChannel(
-    ~stream,
-    ~channel="main",
-    (),
-  )->Obj.magic
-  
+  let connection = Stream_Bindings.useChannel(~stream, ~channel="main", ())->Obj.magic
+
   {connection: connection}
 }
 

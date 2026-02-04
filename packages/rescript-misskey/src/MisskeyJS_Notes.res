@@ -3,7 +3,7 @@
 
 open MisskeyJS_Common
 
-module API_Bindings = MisskeyJS_API_Bindings
+// module API_Bindings = MisskeyJS_API_Bindings // Removed - no longer needed
 module Client = MisskeyJS_Client
 
 // Visibility type
@@ -72,15 +72,15 @@ let create = async (
   (),
 ): result<JSON.t, [> #APIError(apiError) | #UnknownError(exn)]> => {
   let obj = Dict.make()
-  
+
   text->Option.forEach(v => obj->Dict.set("text", JSON.Encode.string(v)))
   obj->Dict.set("visibility", JSON.Encode.string(visibilityToString(visibility)))
   cw->Option.forEach(v => obj->Dict.set("cw", JSON.Encode.string(v)))
   localOnly->Option.forEach(v => obj->Dict.set("localOnly", JSON.Encode.bool(v)))
-  reactionAcceptance->Option.forEach(v => 
+  reactionAcceptance->Option.forEach(v =>
     obj->Dict.set("reactionAcceptance", JSON.Encode.string(reactionAcceptanceToString(v)))
   )
-  fileIds->Option.forEach(arr => 
+  fileIds->Option.forEach(arr =>
     obj->Dict.set("fileIds", JSON.Encode.array(arr->Array.map(JSON.Encode.string)))
   )
   poll->Option.forEach(p => {
@@ -97,7 +97,7 @@ let create = async (
   visibleUserIds->Option.forEach(arr =>
     obj->Dict.set("visibleUserIds", JSON.Encode.array(arr->Array.map(JSON.Encode.string)))
   )
-  
+
   try {
     let result = await Client.request(
       client,
@@ -115,10 +115,10 @@ let create = async (
 // ============================================================
 
 // Get a note by ID
-let show = async (
-  client: Client.t,
-  ~noteId: id,
-): result<JSON.t, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let show = async (client: Client.t, ~noteId: id): result<
+  JSON.t,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   try {
     let result = await Client.request(
       client,
@@ -136,10 +136,10 @@ let show = async (
 // ============================================================
 
 // Delete a note
-let delete = async (
-  client: Client.t,
-  ~noteId: id,
-): result<unit, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let delete = async (client: Client.t, ~noteId: id): result<
+  unit,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   try {
     let _ = await Client.request(
       client,
@@ -157,19 +157,20 @@ let delete = async (
 // ============================================================
 
 // Add reaction to a note
-let react = async (
-  client: Client.t,
-  ~noteId: id,
-  ~reaction: string,
-): result<unit, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let react = async (client: Client.t, ~noteId: id, ~reaction: string): result<
+  unit,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   try {
     let _ = await Client.request(
       client,
       ~endpoint="notes/reactions/create",
-      ~params=JSON.Encode.object(Dict.fromArray([
-        ("noteId", JSON.Encode.string(noteId)),
-        ("reaction", JSON.Encode.string(reaction)),
-      ])),
+      ~params=JSON.Encode.object(
+        Dict.fromArray([
+          ("noteId", JSON.Encode.string(noteId)),
+          ("reaction", JSON.Encode.string(reaction)),
+        ]),
+      ),
     )
     Ok()
   } catch {
@@ -178,10 +179,10 @@ let react = async (
 }
 
 // Remove reaction from a note
-let unreact = async (
-  client: Client.t,
-  ~noteId: id,
-): result<unit, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let unreact = async (client: Client.t, ~noteId: id): result<
+  unit,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   try {
     let _ = await Client.request(
       client,

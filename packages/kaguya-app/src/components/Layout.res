@@ -43,7 +43,7 @@ let make = (~children: Preact.element) => {
               </li>
               {if isReadOnly {
                 <li>
-                  <small 
+                  <small
                     className="readonly-badge"
                     title="You're in read-only mode. You can view content but cannot post, react, or follow."
                     role="status"

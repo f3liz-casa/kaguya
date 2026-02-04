@@ -20,10 +20,8 @@ type observerOptions = {
 // ============================================================
 
 @new
-external make: (
-  array<intersectionObserverEntry> => unit,
-  observerOptions,
-) => intersectionObserver = "IntersectionObserver"
+external make: (array<intersectionObserverEntry> => unit, observerOptions) => intersectionObserver =
+  "IntersectionObserver"
 
 @send
 external observe: (intersectionObserver, Dom.element) => unit = "observe"
@@ -38,24 +36,19 @@ external disconnect: intersectionObserver => unit = "disconnect"
 // Helper Functions
 // ============================================================
 
-let makeObserver = (
-  element: Dom.element,
-  callback: unit => unit,
-  ~threshold: float=0.1,
-  (),
-): (intersectionObserver, unit => unit) => {
-  let observer = make(
-    entries => {
-      switch entries->Array.get(0) {
-      | Some(entry) =>
-        if entry.isIntersecting {
-          callback()
-        }
-      | None => ()
+let makeObserver = (element: Dom.element, callback: unit => unit, ~threshold: float=0.1, ()): (
+  intersectionObserver,
+  unit => unit,
+) => {
+  let observer = make(entries => {
+    switch entries->Array.get(0) {
+    | Some(entry) =>
+      if entry.isIntersecting {
+        callback()
       }
-    },
-    {threshold: threshold},
-  )
+    | None => ()
+    }
+  }, {threshold: threshold})
 
   observe(observer, element)
 

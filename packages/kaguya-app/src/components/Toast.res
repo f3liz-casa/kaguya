@@ -15,7 +15,7 @@ module ToastItem = {
     | #info => ("rgba(59, 130, 246, 0.1)", "#3b82f6", "ℹ️")
     | #success => ("rgba(34, 197, 94, 0.1)", "#22c563", "✓")
     }
-    
+
     let containerStyle = Style.make(
       ~position="relative",
       ~display="flex",
@@ -32,14 +32,9 @@ module ToastItem = {
       ~animation="slideInRight 0.3s ease-out",
       (),
     )
-    
-    let iconStyle = Style.make(
-      ~fontSize="20px",
-      ~flexShrink="0",
-      ~marginTop="2px",
-      (),
-    )
-    
+
+    let iconStyle = Style.make(~fontSize="20px", ~flexShrink="0", ~marginTop="2px", ())
+
     let messageStyle = Style.make(
       ~flex="1",
       ~fontSize="14px",
@@ -48,7 +43,7 @@ module ToastItem = {
       ~wordBreak="break-word",
       (),
     )
-    
+
     let closeButtonStyle = Style.make(
       ~position="absolute",
       ~top="8px",
@@ -64,18 +59,10 @@ module ToastItem = {
       ~color="var(--color)",
       (),
     )
-    
-    <div 
-      style={containerStyle}
-      role="alert"
-      ariaLive=#assertive
-    >
-      <span style={iconStyle} ariaHidden={true}>
-        {Preact.string(icon)}
-      </span>
-      <div style={messageStyle}>
-        {Preact.string(toast.message)}
-      </div>
+
+    <div style={containerStyle} role="alert" ariaLive=#assertive>
+      <span style={iconStyle} ariaHidden={true}> {Preact.string(icon)} </span>
+      <div style={messageStyle}> {Preact.string(toast.message)} </div>
       <button
         style={closeButtonStyle}
         onClick={_ => onDismiss()}
@@ -103,7 +90,7 @@ module ToastItem = {
 @jsx.component
 let make = () => {
   let toasts = PreactSignals.value(ToastState.toasts)
-  
+
   let containerStyle = Style.make(
     ~position="fixed",
     ~bottom="20px",
@@ -115,26 +102,19 @@ let make = () => {
     ~pointerEvents="none",
     (),
   )
-  
-  let toastWrapperStyle = Style.make(
-    ~pointerEvents="auto",
-    (),
-  )
-  
+
+  let toastWrapperStyle = Style.make(~pointerEvents="auto", ())
+
   if Array.length(toasts) > 0 {
-    <div 
-      style={containerStyle}
-      ariaLive=#polite
-      ariaAtomic={false}
-    >
+    <div style={containerStyle} ariaLive=#polite ariaAtomic={false}>
       <div style={toastWrapperStyle}>
-        {toasts->Array.map(toast => {
-          <ToastItem 
-            key={toast.id} 
-            toast={toast} 
-            onDismiss={() => ToastState.dismissToast(toast.id)} 
+        {toasts
+        ->Array.map(toast => {
+          <ToastItem
+            key={toast.id} toast={toast} onDismiss={() => ToastState.dismissToast(toast.id)}
           />
-        })->Preact.array}
+        })
+        ->Preact.array}
       </div>
     </div>
   } else {

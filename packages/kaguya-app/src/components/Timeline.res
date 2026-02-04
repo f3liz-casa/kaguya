@@ -4,7 +4,7 @@
 type timelineState =
   | Loading
   | Loaded({
-      notes: array<JSON.t>,
+      notes: array<NoteView.t>,
       lastPostId: option<string>,
       hasMore: bool,
       isLoadingMore: bool,
@@ -14,45 +14,32 @@ type timelineState =
 
 // Helper to extract error message from exn
 let getExnMessage = (exn: exn): string => {
-  switch exn->Exn.asJsExn {
-  | Some(jsExn) => Exn.message(jsExn)->Option.getOr("Unknown error")
+  switch exn->JsExn.fromException {
+  | Some(jsExn) => JsExn.message(jsExn)->Option.getOr("Unknown error")
   | None => "Unknown error"
   }
 }
 
-// Helper to extract ID from note
-let getNoteId = (note: JSON.t): option<string> => {
-  note
-  ->JSON.Decode.object
-  ->Option.flatMap(obj => obj->Dict.get("id"))
-  ->Option.flatMap(JSON.Decode.string)
-}
-
 // Helper to get last note ID from notes array
-let getLastNoteId = (notes: array<JSON.t>): option<string> => {
-  notes->Array.at(-1)->Option.flatMap(getNoteId)
+let getLastNoteId = (notes: array<NoteView.t>): option<string> => {
+  notes->Array.at(-1)->Option.map(note => note.id)
 }
 
 // Helper to check if a note already exists in the array (by ID)
-let noteExists = (notes: array<JSON.t>, noteId: string): bool => {
-  notes->Array.some(note => {
-    switch getNoteId(note) {
-    | Some(id) => id == noteId
-    | None => false
-    }
-  })
+let noteExists = (notes: array<NoteView.t>, noteId: string): bool => {
+  notes->Array.some(note => note.id == noteId)
 }
 
 @jsx.component
-let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") => {
+let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
   // Track render performance
   let _ = PerfMonitor.useRenderMetrics(~component="Timeline")
-  
+
   let (state, setState) = PreactHooks.useState(() => Loading)
-  
+
   // Ref to store the streaming subscription
   let subscriptionRef = PreactHooks.useRef(None)
-  
+
   // Ref to track if we've already started streaming for this timeline
   let hasStartedStreamingRef = PreactHooks.useRef(false)
 
@@ -61,18 +48,19 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
     // Reset to loading state when timeline changes
     setState(_ => Loading)
     hasStartedStreamingRef.current = false // Reset streaming flag
-    
+
     let fetchTimeline = async () => {
       switch PreactSignals.value(AppState.client) {
       | Some(client) => {
-          let result = await client->MisskeyJS.Timeline.fetch(
-            ~type_=timelineType,
-            ~params={limit: 20},
+          let result = await client->Misskey.Notes.fetch(
+            timelineType,
+            ~limit=20,
             (),
           )
 
           switch result {
-          | Ok(notes) => {
+          | Ok(rawJson) => {
+              let notes = NoteDecoder.decodeManyFromJson(rawJson)
               let lastPostId = getLastNoteId(notes)
               setState(_ => Loaded({
                 notes,
@@ -82,8 +70,7 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
                 isStreaming: false,
               }))
             }
-          | Error(#APIError(err)) => setState(_ => Error(err.message))
-          | Error(#UnknownError(exn)) => setState(_ => Error(getExnMessage(exn)))
+          | Error(msg) => setState(_ => Error(msg))
           }
         }
       | None => setState(_ => Error("Not connected"))
@@ -100,17 +87,21 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
     // 1. We have a client
     // 2. State is Loaded
     // 3. We haven't already started streaming for this timeline
-    let shouldSubscribe = switch (PreactSignals.value(AppState.client), state, hasStartedStreamingRef.current) {
+    let shouldSubscribe = switch (
+      PreactSignals.value(AppState.client),
+      state,
+      hasStartedStreamingRef.current,
+    ) {
     | (Some(_), Loaded(_), false) => true
     | _ => false
     }
-    
+
     if shouldSubscribe {
       switch PreactSignals.value(AppState.client) {
       | Some(client) => {
           Console.log("Starting streaming subscription...")
           hasStartedStreamingRef.current = true
-          
+
           // Update state to indicate streaming is active FIRST
           setState(prev => {
             switch prev {
@@ -121,41 +112,38 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
             | _ => prev
             }
           })
-          
+
           // Subscribe to timeline updates
-          let subscription = client->MisskeyJS.Timeline.subscribe(
-            ~type_=timelineType,
-            ~params={},
-            (),
-          )->MisskeyJS.Timeline.onNote(newNote => {
+          let subscription = client->Misskey.Stream.timeline(timelineType, newNote => {
             Console.log("Received new note via stream")
+            // Decode note at the boundary
+            let decodedNote = NoteDecoder.decode(newNote)
+
             // Add new note to timeline with deduplication
-            setState(prev => {
-              switch prev {
-              | Loaded(data) => {
-                  // Check if note already exists (deduplication)
-                  let noteId = getNoteId(newNote)
-                  let shouldAdd = switch noteId {
-                  | Some(id) => !noteExists(data.notes, id)
-                  | None => true // If no ID, add anyway (shouldn't happen)
+            setState(
+              prev => {
+                switch (prev, decodedNote) {
+                | (Loaded(data), Some(noteData)) => {
+                    // Check if note already exists (deduplication)
+                    let shouldAdd = !noteExists(data.notes, noteData.id)
+
+                    if shouldAdd {
+                      // Prepend new note to the beginning of the timeline
+                      Loaded({
+                        ...data,
+                        notes: [noteData]->Array.concat(data.notes),
+                      })
+                    } else {
+                      // Note already exists, no update needed
+                      prev
+                    }
                   }
-                  
-                  if shouldAdd {
-                    // Prepend new note to the beginning of the timeline
-                    Loaded({
-                      ...data,
-                      notes: [newNote]->Array.concat(data.notes),
-                    })
-                  } else {
-                    // Note already exists, no update needed
-                    prev
-                  }
+                | _ => prev // If decoding failed or not in Loaded state, no update
                 }
-              | _ => prev
-              }
-            })
+              },
+            )
           })
-          
+
           // Store subscription ref
           subscriptionRef.current = Some(subscription)
           Console.log("Subscription created and stored")
@@ -163,21 +151,23 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
       | None => Console.log("No client available for streaming")
       }
     }
-    
+
     None // No cleanup here - handled by separate effect
   })
-  
+
   // Cleanup subscription on unmount or timeline change
   PreactHooks.useEffect1(() => {
-    Some(() => {
-      Console.log("Timeline unmounting or changing - cleaning up subscription...")
-      subscriptionRef.current->Option.forEach(sub => {
-        MisskeyJS.Timeline.dispose(sub)
-        Console.log("Subscription disposed")
-      })
-      subscriptionRef.current = None
-      hasStartedStreamingRef.current = false
-    })
+    Some(
+      () => {
+        Console.log("Timeline unmounting or changing - cleaning up subscription...")
+        subscriptionRef.current->Option.forEach(sub => {
+          sub.dispose()
+          Console.log("Subscription disposed")
+        })
+        subscriptionRef.current = None
+        hasStartedStreamingRef.current = false
+      },
+    )
   }, [timelineType])
 
   // Handle refresh
@@ -186,14 +176,15 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
 
     switch PreactSignals.value(AppState.client) {
     | Some(client) => {
-        let result = await client->MisskeyJS.Timeline.fetch(
-          ~type_=timelineType,
-          ~params={limit: 20},
+        let result = await client->Misskey.Notes.fetch(
+          timelineType,
+          ~limit=20,
           (),
         )
 
         switch result {
-        | Ok(notes) => {
+        | Ok(rawJson) => {
+            let notes = NoteDecoder.decodeManyFromJson(rawJson)
             let lastPostId = getLastNoteId(notes)
             setState(_ => Loaded({
               notes,
@@ -203,8 +194,7 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
               isStreaming: false,
             }))
           }
-        | Error(#APIError(err)) => setState(_ => Error(err.message))
-        | Error(#UnknownError(exn)) => setState(_ => Error(getExnMessage(exn)))
+        | Error(msg) => setState(_ => Error(msg))
         }
       }
     | None => setState(_ => Error("Not connected"))
@@ -218,7 +208,13 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
   // Handle loading more posts (infinite scroll)
   let loadMore = async () => {
     switch state {
-    | Loaded({notes, lastPostId: Some(lastId), hasMore: true, isLoadingMore: false, isStreaming}) => {
+    | Loaded({
+        notes,
+        lastPostId: Some(lastId),
+        hasMore: true,
+        isLoadingMore: false,
+        isStreaming,
+      }) => {
         // Set loading state
         setState(prev => {
           switch prev {
@@ -229,14 +225,16 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
 
         switch PreactSignals.value(AppState.client) {
         | Some(client) => {
-            let result = await client->MisskeyJS.Timeline.fetch(
-              ~type_=timelineType,
-              ~params={limit: 20, untilId: lastId},
+            let result = await client->Misskey.Notes.fetch(
+              timelineType,
+              ~limit=20,
+              ~untilId=lastId,
               (),
             )
 
             switch result {
-            | Ok(newNotes) => {
+            | Ok(newRawJson) => {
+                let newNotes = NoteDecoder.decodeManyFromJson(newRawJson)
                 let allNotes = Array.concat(notes, newNotes)
                 let newLastPostId = getLastNoteId(newNotes)
                 setState(_ => Loaded({
@@ -247,26 +245,22 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
                   isStreaming,
                 }))
               }
-            | Error(_) => {
-                // Reset loading state on error
-                setState(prev => {
-                  switch prev {
-                  | Loaded(data) => Loaded({...data, isLoadingMore: false})
-                  | _ => prev
-                  }
-                })
-              }
+            | Error(_) => // Reset loading state on error
+              setState(prev => {
+                switch prev {
+                | Loaded(data) => Loaded({...data, isLoadingMore: false})
+                | _ => prev
+                }
+              })
             }
           }
-        | None => {
-            // Reset loading state if no client
-            setState(prev => {
-              switch prev {
-              | Loaded(data) => Loaded({...data, isLoadingMore: false})
-              | _ => prev
-              }
-            })
-          }
+        | None => // Reset loading state if no client
+          setState(prev => {
+            switch prev {
+            | Loaded(data) => Loaded({...data, isLoadingMore: false})
+            | _ => prev
+            }
+          })
         }
       }
     | _ => () // Do nothing if not in the right state
@@ -285,10 +279,10 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
   // Setup IntersectionObserver for infinite scroll
   PreactHooks.useEffect1(() => {
     let sentinel = sentinelRef.current
-    
+
     // Create and setup observer only if sentinel exists
     if !Nullable.isNullable(sentinel) {
-      let element = sentinel->Nullable.toOption->Option.getExn
+      let element = sentinel->Nullable.toOption->Option.getOrThrow
       let (_observer, cleanup) = IntersectionObserver.makeObserver(
         element,
         () => {
@@ -316,7 +310,7 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
             | #global => "Global"
             | #hybrid => "Social"
             | #antenna(_) => "Antenna"
-            | #userList(_) => "List"
+            | #list(_) => "List"
             | #channel(_) => "Channel"
             }
           },
@@ -335,7 +329,8 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
             ~color="#10b981",
             ~fontWeight="600",
             (),
-          )}>
+          )}
+        >
           <span
             style={Style.make(
               ~width="8px",
@@ -373,10 +368,8 @@ let make = (~timelineType: MisskeyJS.Timeline.timelineType, ~name: string="") =>
         <>
           <div className="timeline-notes">
             {notes
-            ->Array.mapWithIndex((note, index) => {
-              // Get note ID for key
-              let id = getNoteId(note)->Option.getOr(Int.toString(index))
-              <Note key={id} note />
+            ->Array.map(note => {
+              <Note.NoteView key={note.id} note />
             })
             ->Preact.array}
           </div>

@@ -72,13 +72,15 @@ let make = () => {
         <button
           className={loginMethod == "miauth" ? "active" : ""}
           onClick={_ => setLoginMethod(_ => "miauth")}
-          type_="button">
+          type_="button"
+        >
           {Preact.string("MiAuth (Recommended)")}
         </button>
         <button
           className={loginMethod == "token" ? "active" : ""}
           onClick={_ => setLoginMethod(_ => "token")}
-          type_="button">
+          type_="button"
+        >
           {Preact.string("Manual Token")}
         </button>
       </div>
@@ -107,17 +109,16 @@ let make = () => {
                 id="permission-mode"
                 name="permission-mode"
                 value={permissionMode == AppState.ReadOnly ? "readonly" : "standard"}
-                onChange={handlePermissionModeChange}>
+                onChange={handlePermissionModeChange}
+              >
                 <option value="standard"> {Preact.string("Standard (read + write)")} </option>
                 <option value="readonly"> {Preact.string("Read-only (view only)")} </option>
               </select>
               <small>
                 {Preact.string(
                   switch permissionMode {
-                  | AppState.ReadOnly =>
-                    "Read-only mode: View timelines, profiles, and content. Cannot post, react, or follow."
-                  | AppState.Standard =>
-                    "Standard mode: Full access to post, react, follow, and manage your account."
+                  | AppState.ReadOnly => "Read-only mode: View timelines, profiles, and content. Cannot post, react, or follow."
+                  | AppState.Standard => "Standard mode: Full access to post, react, follow, and manage your account."
                   },
                 )}
               </small>
@@ -185,7 +186,7 @@ let make = () => {
           </button>
         </form>
       }}
-      
+
       <footer>
         <small className="login-help">
           {Preact.string("Need help? Visit your instance's settings to generate an access token.")}

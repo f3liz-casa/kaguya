@@ -26,7 +26,14 @@ type rec note = {
   cw: option<string>,
   visibility: visibility,
   localOnly: option<bool>,
-  reactionAcceptance: option<[#likeOnly | #likeOnlyForRemote | #nonSensitiveOnly | #nonSensitiveOnlyForLocalLikeOnlyForRemote]>,
+  reactionAcceptance: option<
+    [
+      | #likeOnly
+      | #likeOnlyForRemote
+      | #nonSensitiveOnly
+      | #nonSensitiveOnlyForLocalLikeOnlyForRemote
+    ],
+  >,
   renoteCount: int,
   repliesCount: int,
   reactions: Dict.t<int>,
@@ -53,8 +60,5 @@ type t = note
 
 // Check if a note is a pure renote (no additional content)
 let isPureRenote = (note: note): bool => {
-  note.text == None &&
-  note.fileIds->Array.length == 0 &&
-  note.poll == None &&
-  note.renote != None
+  note.text == None && note.fileIds->Array.length == 0 && note.poll == None && note.renote != None
 }

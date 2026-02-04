@@ -17,7 +17,8 @@ type navigationOptions = {
 
 // Get current location and navigate function with options support
 @module("wouter-preact")
-external useLocationWithOptions: unit => (string, (string, navigationOptions) => unit) = "useLocation"
+external useLocationWithOptions: unit => (string, (string, navigationOptions) => unit) =
+  "useLocation"
 
 // Get current location (basic version)
 @module("wouter-preact")

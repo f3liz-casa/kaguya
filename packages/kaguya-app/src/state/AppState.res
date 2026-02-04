@@ -75,8 +75,8 @@ let accessToken: PreactSignals.signal<option<string>> = PreactSignals.make(
 // Authentication state
 let authState: PreactSignals.signal<authState> = PreactSignals.make(LoggedOut)
 
-// MisskeyJS Client
-let client: PreactSignals.signal<option<MisskeyJS.Client.t>> = PreactSignals.make(None)
+// Misskey Client
+let client: PreactSignals.signal<option<Misskey.t>> = PreactSignals.make(None)
 
 // Current user info
 let currentUser: PreactSignals.signal<option<JSON.t>> = PreactSignals.make(None)
@@ -87,7 +87,7 @@ let permissionMode: PreactSignals.signal<option<permissionMode>> = PreactSignals
   | Some("ReadOnly") => Some(ReadOnly)
   | Some("Standard") => Some(Standard)
   | _ => None
-  }
+  },
 )
 
 // ============================================================
@@ -156,20 +156,11 @@ let login = async (~origin: string, ~token: string): result<unit, loginError> =>
   PreactSignals.setValue(authState, LoggingIn)
 
   // Create client
-  let newClient = MisskeyJS.Client.make(~origin=normalizedOrigin, ~credential=token, ())
-
-  // Setup metrics callback to automatically track all API calls
-  MisskeyJS.Client.setMetricsCallback(newClient, metrics => {
-    PerfMonitor.trackApiCall(
-      ~endpoint=metrics.endpoint,
-      ~duration=metrics.durationMs,
-      ~success=metrics.success,
-    )
-  })
+  let newClient = Misskey.connect(normalizedOrigin, ~token)
 
   // Try to fetch current user to verify credentials
   Console.log("AppState.login: Fetching current user...")
-  let result = await newClient->MisskeyJS.Me.get
+  let result = await newClient->Misskey.currentUser
 
   switch result {
   | Ok(user) => {
@@ -202,19 +193,9 @@ let login = async (~origin: string, ~token: string): result<unit, loginError> =>
       Console.log("AppState.login: Login successful")
       Ok()
     }
-  | Error(#APIError(err)) => {
-      Console.error3("AppState.login: API Error fetching user", err.message, err.code)
+  | Error(msg) => {
+      Console.error2("AppState.login: Error fetching user", msg)
       let error = InvalidCredentials
-      PreactSignals.setValue(authState, LoginFailed(error))
-      Error(error)
-    }
-  | Error(#UnknownError(exn)) => {
-      let msg = switch exn->Exn.asJsExn {
-      | Some(jsExn) => Exn.message(jsExn)->Option.getOr("Unknown error")
-      | None => "Unknown error"
-      }
-      Console.error2("AppState.login: Unknown error fetching user", msg)
-      let error = UnknownError(msg)
       PreactSignals.setValue(authState, LoginFailed(error))
       Error(error)
     }
@@ -222,7 +203,7 @@ let login = async (~origin: string, ~token: string): result<unit, loginError> =>
 }
 
 // Get permissions based on mode
-let getPermissionsForMode = (mode: permissionMode): array<MisskeyJS.MiAuth.permission> => {
+let getPermissionsForMode = (mode: permissionMode): array<Misskey.MiAuth.permission> => {
   switch mode {
   | ReadOnly => [
       #read_account,
@@ -239,9 +220,6 @@ let getPermissionsForMode = (mode: permissionMode): array<MisskeyJS.MiAuth.permi
       #read_gallery_likes,
       #read_flash,
       #read_flash_likes,
-      #read_clip,
-      #read_clip_favorite,
-      #read_federation,
     ]
   | Standard => [
       #read_account,
@@ -265,10 +243,6 @@ let getPermissionsForMode = (mode: permissionMode): array<MisskeyJS.MiAuth.permi
       #write_channels,
       #read_gallery,
       #read_flash,
-      #read_clip,
-      #write_clip,
-      #write_clip_favorite,
-      #read_clip_favorite,
     ]
   }
 }
@@ -276,28 +250,31 @@ let getPermissionsForMode = (mode: permissionMode): array<MisskeyJS.MiAuth.permi
 // Start MiAuth flow with permission mode
 let startMiAuth = (~origin: string, ~mode: permissionMode=Standard, ()): unit => {
   let normalizedOrigin = normalizeOrigin(origin)
-  
+
   let permissions = getPermissionsForMode(mode)
-  
+
   // Generate auth session
-  let session = MisskeyJS.MiAuth.generateAuthUrl(
+  let session = Misskey.MiAuth.generateUrl(
     ~origin=normalizedOrigin,
     ~name="Kaguya",
     ~permissions,
     ~callback=`${Window.location.origin}/miauth-callback`,
     (),
   )
-  
+
   // Store session info and permission mode
   setStoredValue(storageKeyMiAuthSession, session.sessionId)
   setStoredValue(storageKeyMiAuthOrigin, normalizedOrigin)
-  setStoredValue(storageKeyPermissionMode, switch mode {
+  setStoredValue(
+    storageKeyPermissionMode,
+    switch mode {
     | ReadOnly => "ReadOnly"
     | Standard => "Standard"
-  })
-  
+    },
+  )
+
   // Redirect to auth URL
-  MisskeyJS.MiAuth.openAuthUrl(session.authUrl)
+  Misskey.MiAuth.openUrl(session.authUrl)
 }
 
 // Check MiAuth session and complete login
@@ -305,54 +282,46 @@ let checkMiAuth = async (): result<unit, loginError> => {
   Console.log("AppState.checkMiAuth: Starting MiAuth session check...")
   let sessionOpt = getStoredValue(storageKeyMiAuthSession)
   let originOpt = getStoredValue(storageKeyMiAuthOrigin)
-  
+
   Console.log2("AppState.checkMiAuth: Session stored?", sessionOpt->Option.isSome)
   Console.log2("AppState.checkMiAuth: Origin stored?", originOpt->Option.isSome)
-  
+
   switch (sessionOpt, originOpt) {
   | (Some(sessionId), Some(origin)) => {
       Console.log3("AppState.checkMiAuth: Found session", sessionId, origin)
       PreactSignals.setValue(authState, LoggingIn)
-      
-      let checkResult = await MisskeyJS.MiAuth.check(~origin, ~sessionId)
-      
+
+      let checkResult = await Misskey.MiAuth.check(~origin, ~sessionId)
+
       switch checkResult {
-       | Ok({token: Some(token), user: _}) => {
-           Console.log("AppState.checkMiAuth: Token received successfully")
-           // Clear MiAuth session (but keep permission mode for login function)
-           removeStoredValue(storageKeyMiAuthSession)
-           removeStoredValue(storageKeyMiAuthOrigin)
-           
-           // Login with the token (will restore permission mode from storage)
-           let loginResult = await login(~origin, ~token)
-           Console.log2("AppState.checkMiAuth: Login result:", loginResult->Result.isOk)
-           loginResult
-         }
-       | Ok({token: None, user: _}) => {
-           Console.log("AppState.checkMiAuth: Token is None - auth still pending")
-           // Return error so callback page can retry
-           let error = UnknownError("Authorization pending. Please complete the authorization process.")
-           PreactSignals.setValue(authState, LoggingIn)
-           Error(error)
-         }
-       | Error(#APIError(err)) => {
-           Console.error3("AppState.checkMiAuth: API Error", err.message, err.code)
-           let error = InvalidCredentials
-           PreactSignals.setValue(authState, LoginFailed(error))
-           Error(error)
-         }
-       | Error(#UnknownError(exn)) => {
-           let msg = switch exn->Exn.asJsExn {
-           | Some(jsExn) => Exn.message(jsExn)->Option.getOr("Unknown error")
-           | None => "Unknown error"
-           }
-           Console.error2("AppState.checkMiAuth: Unknown error", msg)
-           let error = UnknownError(msg)
-           PreactSignals.setValue(authState, LoggingIn)
-           Error(error)
-         }
-       }
-     }
+      | Ok({token: Some(token), user: _}) => {
+          Console.log("AppState.checkMiAuth: Token received successfully")
+          // Clear MiAuth session (but keep permission mode for login function)
+          removeStoredValue(storageKeyMiAuthSession)
+          removeStoredValue(storageKeyMiAuthOrigin)
+
+          // Login with the token (will restore permission mode from storage)
+          let loginResult = await login(~origin, ~token)
+          Console.log2("AppState.checkMiAuth: Login result:", loginResult->Result.isOk)
+          loginResult
+        }
+      | Ok({token: None, user: _}) => {
+          Console.log("AppState.checkMiAuth: Token is None - auth still pending")
+          // Return error so callback page can retry
+          let error = UnknownError(
+            "Authorization pending. Please complete the authorization process.",
+          )
+          PreactSignals.setValue(authState, LoggingIn)
+          Error(error)
+        }
+      | Error(msg) => {
+          Console.error2("AppState.checkMiAuth: Error", msg)
+          let error = InvalidCredentials
+          PreactSignals.setValue(authState, LoginFailed(error))
+          Error(error)
+        }
+      }
+    }
   | _ => {
       Console.log("AppState.checkMiAuth: Session or origin not found in storage")
       let error = UnknownError("Session information not found. Please try logging in again.")
@@ -368,14 +337,14 @@ let logout = (): unit => {
   removeStoredValue(storageKeyOrigin)
   removeStoredValue(storageKeyToken)
   removeStoredValue(storageKeyPermissionMode)
-  
+
   // Clean up any leftover MiAuth session data
   removeStoredValue(storageKeyMiAuthSession)
   removeStoredValue(storageKeyMiAuthOrigin)
 
   // Close any existing stream connection
   switch PreactSignals.value(client) {
-  | Some(c) => MisskeyJS.Client.close(c)
+  | Some(c) => c->Misskey.close
   | None => ()
   }
 

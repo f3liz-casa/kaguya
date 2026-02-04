@@ -1,5 +1,6 @@
 // Drive file entity types
 
+@@warning("-30") // Duplicate field names in recursive types are intentional
 open MisskeyJS_Common
 
 // File properties

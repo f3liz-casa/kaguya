@@ -36,9 +36,7 @@ let generateId = (): string => {
 
 // Dismiss a specific toast by ID
 let dismissToast = (id: string): unit => {
-  PreactSignals.setValue(toasts, 
-    PreactSignals.value(toasts)->Array.filter(toast => toast.id != id)
-  )
+  PreactSignals.setValue(toasts, PreactSignals.value(toasts)->Array.filter(toast => toast.id != id))
 }
 
 // Add a toast notification
@@ -49,9 +47,9 @@ let addToast = (~message: string, ~type_: toastType): unit => {
     type_,
     timestamp: Date.now(),
   }
-  
+
   PreactSignals.setValue(toasts, Array.concat(PreactSignals.value(toasts), [newToast]))
-  
+
   // Auto-dismiss after timeout
   let _ = SetTimeout.make(() => {
     dismissToast(newToast.id)

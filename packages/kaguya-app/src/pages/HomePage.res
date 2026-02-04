@@ -2,23 +2,20 @@
 // HomePage.res - Home page with timeline selector
 
 type timelineItem = {
-  type_: MisskeyJS.Timeline.timelineType,
+  type_: Misskey.Stream.timelineType,
   name: string,
   category: [#standard | #antenna | #list | #channel],
 }
 
 type state =
   | Loading
-  | Loaded({
-      customTimelines: array<timelineItem>,
-      selectedTimeline: timelineItem,
-    })
+  | Loaded({customTimelines: array<timelineItem>, selectedTimeline: timelineItem})
   | Error(string)
 
 // Helper to extract error message from exn
 let getExnMessage = (exn: exn): string => {
-  switch exn->Exn.asJsExn {
-  | Some(jsExn) => Exn.message(jsExn)->Option.getOr("Unknown error")
+  switch exn->JsExn.fromException {
+  | Some(jsExn) => JsExn.message(jsExn)->Option.getOr("Unknown error")
   | None => "Unknown error"
   }
 }
@@ -44,59 +41,56 @@ let make = () => {
           let customItems = []
 
           // Fetch antennas
-          let antennasResult = await MisskeyJS.CustomTimelines.fetchAntennas(client)
+          let antennasResult = await client->Misskey.CustomTimelines.antennas
           switch antennasResult {
-          | Ok(antennas) => {
-              antennas->Array.forEach(antenna => {
-                switch MisskeyJS.CustomTimelines.extractIdAndName(antenna) {
-                | Some((id, name)) =>
-                  customItems->Array.push({
-                    type_: #antenna(id),
-                    name: name,
-                    category: #antenna,
-                  })
-                | None => ()
-                }
-              })
-            }
+          | Ok(antennas) =>
+            antennas->Array.forEach(antenna => {
+              switch Misskey.CustomTimelines.extractIdAndName(antenna) {
+              | Some((id, name)) =>
+                customItems->Array.push({
+                  type_: #antenna(id),
+                  name,
+                  category: #antenna,
+                })
+              | None => ()
+              }
+            })
           | Error(_) => () // Silently ignore antenna fetch errors
           }
 
           // Fetch user lists
-          let listsResult = await MisskeyJS.CustomTimelines.fetchUserLists(client)
+          let listsResult = await client->Misskey.CustomTimelines.lists
           switch listsResult {
-          | Ok(lists) => {
-              lists->Array.forEach(list => {
-                switch MisskeyJS.CustomTimelines.extractIdAndName(list) {
-                | Some((id, name)) =>
-                  customItems->Array.push({
-                    type_: #userList(id),
-                    name: name,
-                    category: #list,
-                  })
-                | None => ()
-                }
-              })
-            }
+          | Ok(lists) =>
+            lists->Array.forEach(list => {
+              switch Misskey.CustomTimelines.extractIdAndName(list) {
+              | Some((id, name)) =>
+                customItems->Array.push({
+                  type_: #list(id),
+                  name,
+                  category: #list,
+                })
+              | None => ()
+              }
+            })
           | Error(_) => () // Silently ignore list fetch errors
           }
 
           // Fetch channels
-          let channelsResult = await MisskeyJS.CustomTimelines.fetchChannels(client)
+          let channelsResult = await client->Misskey.CustomTimelines.channels
           switch channelsResult {
-          | Ok(channels) => {
-              channels->Array.forEach(channel => {
-                switch MisskeyJS.CustomTimelines.extractIdAndName(channel) {
-                | Some((id, name)) =>
-                  customItems->Array.push({
-                    type_: #channel(id),
-                    name: name,
-                    category: #channel,
-                  })
-                | None => ()
-                }
-              })
-            }
+          | Ok(channels) =>
+            channels->Array.forEach(channel => {
+              switch Misskey.CustomTimelines.extractIdAndName(channel) {
+              | Some((id, name)) =>
+                customItems->Array.push({
+                  type_: #channel(id),
+                  name,
+                  category: #channel,
+                })
+              | None => ()
+              }
+            })
           | Error(_) => () // Silently ignore channel fetch errors
           }
 
@@ -148,7 +142,8 @@ let make = () => {
             <button
               key={timeline.name}
               className={isActive ? "timeline-tab active" : "timeline-tab"}
-              onClick={_ => selectTimeline(timeline)}>
+              onClick={_ => selectTimeline(timeline)}
+            >
               {Preact.string(categoryIcon ++ timeline.name)}
             </button>
           })

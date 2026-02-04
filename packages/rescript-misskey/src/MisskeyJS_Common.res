@@ -45,7 +45,7 @@ type notificationType = [
 ]
 
 // Following/Followers visibility
-type followVisibility = [#public | #followers | #\"private"]
+type followVisibility = [#public | #followers | #"private"]
 
 // Muted note reasons
 type mutedNoteReason = [#word | #manual | #spam | #other]
@@ -60,14 +60,22 @@ type apiError = {
 }
 
 // Check if an error is an API error
-@module("misskey-js/api")
-external isAPIError: 'a => bool = "isAPIError"
-
+// Simple check: API errors should have code, message, id properties
 let isAPIError = (error: exn): option<apiError> => {
-  if isAPIError(error) {
-    Some(error->Obj.magic)
-  } else {
-    None
+  try {
+    // Cast to unknown object to check properties
+    let obj = error->Obj.magic->Obj.magic
+    let hasCode = %raw(`obj && typeof obj === 'object' && 'code' in obj`)
+    let hasMessage = %raw(`obj && typeof obj === 'object' && 'message' in obj`)
+    let hasId = %raw(`obj && typeof obj === 'object' && 'id' in obj`)
+    
+    if hasCode && hasMessage && hasId {
+      Some(error->Obj.magic)
+    } else {
+      None
+    }
+  } catch {
+  | _ => None
   }
 }
 
@@ -75,10 +83,9 @@ let isAPIError = (error: exn): option<apiError> => {
 let isPermissionDenied = (error: apiError): bool => {
   // Check common permission denied error codes
   let code = error.code->String.toLowerCase
-  code == "permission_denied" || 
-  code == "no_such_permission" || 
+  code == "permission_denied" ||
+  code == "no_such_permission" ||
   code == "access_denied" ||
   code == "insufficient_permissions" ||
   code == "forbidden"
 }
-

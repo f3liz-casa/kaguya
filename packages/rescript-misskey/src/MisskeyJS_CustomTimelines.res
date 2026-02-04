@@ -29,11 +29,7 @@ let fetchUserLists = async (client: Client.t): result<
 > => {
   try {
     let emptyParams = Dict.make()->JSON.Encode.object
-    let result = await Client.request(
-      client,
-      ~endpoint="users/lists/list",
-      ~params=emptyParams,
-    )
+    let result = await Client.request(client, ~endpoint="users/lists/list", ~params=emptyParams)
     Ok(result->Obj.magic)
   } catch {
   | error =>

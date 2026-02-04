@@ -1,6 +1,5 @@
 {
   "name": "rescript-mfm",
-  "version": "0.1.0",
   "sources": [
     {
       "dir": "src",
@@ -14,13 +13,7 @@
     }
   ],
   "suffix": ".res.js",
-  "bs-dependencies": [
-    "@rescript/core"
-  ],
   "warnings": {
     "error": "+101"
-  },
-  "bsc-flags": [
-    "-open RescriptCore"
-  ]
+  }
 }

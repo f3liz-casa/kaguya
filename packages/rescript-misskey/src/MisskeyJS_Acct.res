@@ -1,4 +1,5 @@
 // Account (Acct) utilities for parsing and formatting user identifiers
+// Pure ReScript implementation - no external dependencies
 
 type t = {
   username: string,
@@ -11,15 +12,38 @@ type t = {
 //   "@user" -> { username: "user", host: None }
 //   "user@example.com" -> { username: "user", host: Some("example.com") }
 //   "@user@example.com" -> { username: "user", host: Some("example.com") }
-@module("misskey-js") @scope("acct")
-external parse: string => t = "parse"
+let parse = (_acct: string): t => {
+  // Remove leading @ if present
+  let acct = _acct->String.startsWith("@") 
+    ? _acct->String.slice(~start=1, ~end=String.length(_acct))
+    : _acct
+  
+  // Split on @ with limit of 2 parts
+  let parts = acct->String.split("@")
+  
+  // Check length and extract parts
+  if Array.length(parts) == 0 {
+    {username: "", host: None}
+  } else if Array.length(parts) == 1 {
+    {username: parts[0]->Option.getOr(""), host: None}
+  } else {
+    {
+      username: parts[0]->Option.getOr(""),
+      host: parts[1],
+    }
+  }
+}
 
 // Convert an Acct to string format
 // Examples:
 //   { username: "user", host: None } -> "user"
 //   { username: "user", host: Some("example.com") } -> "user@example.com"
-@module("misskey-js") @scope("acct")
-external toString: t => string = "toString"
+let toString = (acct: t): string => {
+  switch acct.host {
+  | None => acct.username
+  | Some(host) => `${acct.username}@${host}`
+  }
+}
 
 // Helper to create an acct
 let make = (~username: string, ~host: option<string>=?, ()): t => {

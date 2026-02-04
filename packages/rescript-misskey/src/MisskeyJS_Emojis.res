@@ -2,7 +2,7 @@
 
 open MisskeyJS_Common
 
-module API_Bindings = MisskeyJS_API_Bindings
+// module API_Bindings = MisskeyJS_API_Bindings // Removed - no longer needed
 module Client = MisskeyJS_Client
 
 // Internal: Error handler
@@ -48,16 +48,17 @@ let decodeCustomEmoji = (json: JSON.t): option<customEmoji> => {
 }
 
 // Get all custom emojis from the instance
-let list = async (
-  client: Client.t,
-): result<array<customEmoji>, [> #APIError(apiError) | #UnknownError(exn)]> => {
+let list = async (client: Client.t): result<
+  array<customEmoji>,
+  [> #APIError(apiError) | #UnknownError(exn)],
+> => {
   try {
     let result = await Client.request(
       client,
       ~endpoint="emojis",
       ~params=JSON.Encode.object(Dict.make()),
     )
-    
+
     // Parse response
     switch result->JSON.Decode.object {
     | Some(obj) =>

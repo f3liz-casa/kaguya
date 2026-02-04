@@ -1,6 +1,5 @@
 {
   "name": "kaguya-app",
-  "version": "0.1.0",
   "sources": [
     {
       "dir": "src",
@@ -14,10 +13,10 @@
     }
   ],
   "suffix": ".res.js",
-  "bs-dependencies": [
-    "@rescript/core",
+  "dependencies": [
     "rescript-misskey",
-    "rescript-mfm"
+    "rescript-mfm",
+    "sury"
   ],
   "jsx": {
     "version": 4,
@@ -25,8 +24,5 @@
   },
   "warnings": {
     "error": "+101"
-  },
-  "bsc-flags": [
-    "-open RescriptCore"
-  ]
+  }
 }

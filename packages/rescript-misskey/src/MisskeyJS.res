@@ -1,5 +1,23 @@
 // Main module for rescript-misskey
 // Re-exports all public APIs with a clean interface
+//
+// ⚠️ DEPRECATION NOTICE ⚠️
+// 
+// This API (MisskeyJS.Client, MisskeyJS.Timeline, etc.) is DEPRECATED.
+// Please use the new simplified Misskey API instead:
+//
+// OLD (deprecated):
+//   open MisskeyJS
+//   let client = Client.make(~origin="https://misskey.io", ~credential="token", ())
+//   let timeline = await client->Timeline.fetch(~type_=#home, ())
+//
+// NEW (recommended):
+//   open Misskey
+//   let client = connect("https://misskey.io", ~token="token")
+//   let timeline = await client->Notes.timeline(#home, ())
+//
+// The old API still works for backward compatibility but will be removed
+// in a future major version. See the migration guide for details.
 
 // ============================================================
 // Common types
@@ -39,8 +57,8 @@ module Notifications = MisskeyJS_Notifications
 // Notes - create, show, delete, react
 module Notes = MisskeyJS_Notes
 
-// Me - current user operations
-module Me = MisskeyJS_Me
+// Me - current user operations (temporarily disabled - needs refactoring)
+// module Me = MisskeyJS_Me
 
 // MiAuth - OAuth-like authentication flow
 module MiAuth = MisskeyJS_MiAuth
@@ -52,8 +70,8 @@ module Emojis = MisskeyJS_Emojis
 // Less-common APIs (via submodules - 20% of use cases)
 // ============================================================
 
-// API - Users, Following, Drive, Meta
-module API = MisskeyJS_API
+// API - Users, Following, Drive, Meta (temporarily disabled - needs refactoring)
+// module API = MisskeyJS_API
 
 // Stream - Drive channel, ServerStats channel
 module Stream = MisskeyJS_Stream

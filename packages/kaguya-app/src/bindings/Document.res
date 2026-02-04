@@ -18,16 +18,12 @@ let setBodyOverflow = (value: string): unit => {
 // ============================================================
 
 @val @scope("document")
-external addEventListenerKeydown: (
-  @as("keydown") _,
-  JsxEvent.Keyboard.t => unit,
-) => unit = "addEventListener"
+external addEventListenerKeydown: (@as("keydown") _, JsxEvent.Keyboard.t => unit) => unit =
+  "addEventListener"
 
 @val @scope("document")
-external removeEventListenerKeydown: (
-  @as("keydown") _,
-  JsxEvent.Keyboard.t => unit,
-) => unit = "removeEventListener"
+external removeEventListenerKeydown: (@as("keydown") _, JsxEvent.Keyboard.t => unit) => unit =
+  "removeEventListener"
 
 // Generic event listener for flexibility
 @val @scope("document")

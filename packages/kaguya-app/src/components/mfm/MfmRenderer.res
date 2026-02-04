@@ -120,7 +120,8 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="mfm-url">
+        className="mfm-url"
+      >
         {Preact.string(url)}
       </a>
     | None => Preact.null
@@ -129,7 +130,8 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
   // Link
   | "link" => {
       let url = getPropString(node.props, "url")->Option.getOr("#")
-      let silent = node.props
+      let silent =
+        node.props
         ->Option.flatMap(p => Dict.get(p, "silent"))
         ->Option.flatMap(JSON.Decode.bool)
         ->Option.getOr(false)
@@ -141,7 +143,8 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className={silent ? "mfm-link mfm-link-silent" : "mfm-link"}>
+          className={silent ? "mfm-link mfm-link-silent" : "mfm-link"}
+        >
           {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
         </a>
       | None => Preact.null
@@ -160,7 +163,8 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
         | Some(h) => `https://${h}/@${username}`
         | None => `/@${username}`
         }}
-        className="mfm-mention">
+        className="mfm-mention"
+      >
         {Preact.string(acct)}
       </a>
     }
@@ -178,34 +182,33 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
   // Emoji code
   | "emojiCode" =>
     switch getPropString(node.props, "name") {
-    | Some(name) => {
-        // Try to get custom emoji from store
-        switch EmojiStore.getEmoji(name) {
-        | Some(emoji) =>
-          <img
-            key={Int.toString(key)}
-            className="mfm-emoji-image"
-            src={emoji.url}
-            alt={`:${name}:`}
-            title={`:${name}:`}
-            loading=#"lazy"
-          />
-        | None => {
-            // Emoji not found - trigger lazy load of global emojis
-            // This will only happen once per session
-            switch AppState.client->PreactSignals.value {
-            | Some(client) => {
-                let _ = EmojiStore.lazyLoadGlobal(client)
-              }
-            | None => ()
+    | Some(name) =>
+      // Try to get custom emoji from store
+      switch EmojiStore.getEmoji(name) {
+      | Some(emoji) =>
+        <img
+          key={Int.toString(key)}
+          className="mfm-emoji-image"
+          src={emoji.url}
+          alt={`:${name}:`}
+          title={`:${name}:`}
+          loading=#lazy
+        />
+      | None => {
+          // Emoji not found - trigger lazy load of global emojis
+          // This will only happen once per session
+          switch AppState.client->PreactSignals.value {
+          | Some(client) => {
+              let _ = EmojiStore.lazyLoadGlobal(client)
             }
-            
-            // Fallback to text for now
-            // Note: The emoji might load on next render after global emojis are fetched
-            <span key={Int.toString(key)} className="mfm-emoji-code">
-              {Preact.string(":" ++ name ++ ":")}
-            </span>
+          | None => ()
           }
+
+          // Fallback to text for now
+          // Note: The emoji might load on next render after global emojis are fetched
+          <span key={Int.toString(key)} className="mfm-emoji-code">
+            {Preact.string(":" ++ name ++ ":")}
+          </span>
         }
       }
     | None => Preact.null
@@ -283,7 +286,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
 let make = (~text: string, ~parseSimple: bool=false) => {
   // Track render performance
   let _ = PerfMonitor.useRenderMetrics(~component="MfmRenderer")
-  
+
   let nodes = if parseSimple {
     Mfm.parseSimple(text)
   } else {

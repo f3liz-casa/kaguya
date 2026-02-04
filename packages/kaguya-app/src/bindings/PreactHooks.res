@@ -9,10 +9,8 @@
 external useState: ('a => 'state) => ('state, ('state => 'state) => unit) = "useState"
 
 @module("preact/hooks")
-external useReducer: (
-  ('state, 'action) => 'state,
-  'state,
-) => ('state, 'action => unit) = "useReducer"
+external useReducer: (('state, 'action) => 'state, 'state) => ('state, 'action => unit) =
+  "useReducer"
 
 // ============================================================
 // Effect Hooks
@@ -37,7 +35,8 @@ external useEffect3: (unit => option<unit => unit>, ('a, 'b, 'c)) => unit = "use
 external useLayoutEffect: (unit => option<unit => unit>) => unit = "useLayoutEffect"
 
 @module("preact/hooks")
-external useLayoutEffect0: (unit => option<unit => unit>, @as(json`[]`) _) => unit = "useLayoutEffect"
+external useLayoutEffect0: (unit => option<unit => unit>, @as(json`[]`) _) => unit =
+  "useLayoutEffect"
 
 @module("preact/hooks")
 external useLayoutEffect1: (unit => option<unit => unit>, array<'a>) => unit = "useLayoutEffect"

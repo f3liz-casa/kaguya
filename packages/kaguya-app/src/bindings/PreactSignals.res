@@ -24,7 +24,7 @@ external computed: (unit => 'a) => computed<'a> = "computed"
 // Run a side effect when signals change
 // Returns a cleanup function
 @module("@preact/signals")
-external effect: (unit => option<unit => unit>) => (unit => unit) = "effect"
+external effect: (unit => option<unit => unit>) => unit => unit = "effect"
 
 // Batch multiple signal updates
 @module("@preact/signals")
