@@ -32,10 +32,10 @@ type t = {
 /// Example:
 ///   let client = Misskey.connect("https://misskey.io")
 ///   let authClient = Misskey.connect("https://misskey.io", ~token="abc123")
-let connect = (origin: string, ~token: option<string>=?): t => {
+let connect = (origin: string, ~token: string=""): t => {
   {
     origin,
-    token,
+    token: token == "" ? None : Some(token),
     streamClient: None,
   }
 }
