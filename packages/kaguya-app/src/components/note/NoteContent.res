@@ -2,7 +2,7 @@
 // NoteContent.res - Note content component (CW handling, text, MFM rendering)
 
 @jsx.component
-let make = (~note: NoteView.t, ~showContent: bool, ~onToggleCw: JsxEvent.Mouse.t => unit) => {
+let make = (~note: NoteView.t, ~showContent: bool, ~onToggleCw: JsxEvent.Mouse.t => unit, ~contextHost: option<string>=?) => {
   <div className="note-content" role="region" ariaLabel="Note content">
     {switch // Content warning handling
     note.cw {
@@ -12,11 +12,11 @@ let make = (~note: NoteView.t, ~showContent: bool, ~onToggleCw: JsxEvent.Mouse.t
         <button
           className="cw-toggle secondary outline"
           onClick={onToggleCw}
-          ariaLabel={showContent ? "Hide content" : "Show content"}
+          ariaLabel={showContent ? "たたむ" : "みる"}
           ariaExpanded={showContent}
           type_="button"
         >
-          {Preact.string(showContent ? "Hide" : "Show")}
+          {Preact.string(showContent ? "たたむ" : "みる")}
         </button>
       </>
     | None => Preact.null
@@ -26,7 +26,7 @@ let make = (~note: NoteView.t, ~showContent: bool, ~onToggleCw: JsxEvent.Mouse.t
       switch note.text {
       | Some(t) =>
         <div className="note-text">
-          <MfmRenderer text={t} />
+          <MfmRenderer text={t} ?contextHost />
         </div>
       | None => Preact.null
       }

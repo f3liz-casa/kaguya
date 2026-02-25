@@ -74,7 +74,7 @@ module ToastItem = {
           let target = JsxEvent.Mouse.currentTarget(e)
           HtmlElement.setOpacity(target, "0.6")
         }}
-        ariaLabel="Dismiss notification"
+        ariaLabel="通知を閉じる"
         type_="button"
       >
         {Preact.string("×")}

@@ -3,42 +3,43 @@
 .perf-section {
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: var(--surface);
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  background: var(--pico-card-background-color);
+  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--pico-card-border-color);
+  box-shadow: var(--pico-card-box-shadow);
 }
 
 .perf-section h2 {
   margin-top: 0;
   margin-bottom: 1rem;
   font-size: 1.25rem;
-  color: var(--text-primary);
+  color: var(--pico-color);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: 1.25rem;
   margin-bottom: 1rem;
 }
 
 .stat-card {
-  padding: 1rem;
-  background: var(--background);
-  border-radius: 6px;
-  border: 1px solid var(--border);
+  padding: 1.25rem;
+  background: var(--pico-background-color);
+  border-radius: 12px;
+  border: 1px solid var(--pico-card-border-color);
 }
 
 .stat-label {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--pico-muted-color);
   margin-bottom: 0.5rem;
 }
 
 .stat-value {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--pico-primary);
 }
 
 .perf-details {
@@ -47,49 +48,58 @@
 
 .perf-details summary {
   cursor: pointer;
-  padding: 0.5rem;
-  background: var(--background);
-  border-radius: 4px;
+  padding: 0.6rem 1rem;
+  background: var(--pico-background-color);
+  border-radius: 20px;
   font-weight: 500;
   user-select: none;
+  transition: all 0.2s ease;
 }
 
 .perf-details summary:hover {
-  background: var(--surface);
+  background: var(--pico-card-border-color);
 }
 
 .perf-table {
   width: 100%;
   margin-top: 1rem;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .perf-table thead {
-  background: var(--surface);
+  background: var(--pico-background-color);
 }
 
 .perf-table th {
-  padding: 0.75rem;
+  padding: 0.85rem;
   text-align: left;
   font-weight: 600;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 2px solid var(--pico-card-border-color);
+  color: var(--pico-muted-color);
+  font-size: 0.85rem;
 }
 
 .perf-table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.85rem;
+  border-bottom: 1px solid var(--pico-card-border-color);
+  font-size: 0.9rem;
+}
+
+.perf-table tr:last-child td {
+  border-bottom: none;
 }
 
 .perf-table tr:hover {
-  background: var(--surface);
+  background: var(--pico-background-color);
 }
 
 .perf-table .success {
-  color: var(--success, #22c55e);
+  color: #52b788;
 }
 
 .perf-table .error {
-  color: var(--error, #ef4444);
+  color: #e5b7b7;
 }
 
 .no-data {

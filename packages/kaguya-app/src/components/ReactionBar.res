@@ -179,8 +179,8 @@ let make = (
           ~justifyContent="center",
           ~gap="3px",
           ~border="none",
-          ~background=isActive ? "rgba(51, 153, 255, 0.2)" : "rgba(127, 127, 127, 0.1)",
-          ~color=isActive ? "#3399ff" : "inherit",
+          ~background=isActive ? "var(--pico-primary-focus)" : "var(--pico-card-border-color)",
+          ~color=isActive ? "var(--pico-color)" : "inherit",
           ~padding="4px 8px",
           ~borderRadius="12px",
           ~cursor=isReadOnly ? "not-allowed" : "pointer",
@@ -191,7 +191,7 @@ let make = (
           ~whiteSpace="nowrap",
           ~overflow="hidden",
           ~textOverflow="ellipsis",
-          ~maxWidth="80px",
+          ~maxWidth="150px",
           ~height="28px",
           ~lineHeight="1",
           ~flex="0 0 auto",
@@ -205,24 +205,18 @@ let make = (
           onMouseEnter={e => {
             if !isReadOnly {
               let target = JsxEvent.Mouse.currentTarget(e)
-              let isActive =
-                HtmlElement.getComputedColor(target) == "rgb(51, 153, 255)" ||
-                  HtmlElement.getComputedColor(target) == "#3399ff"
               HtmlElement.setBackground(
                 target,
-                isActive ? "rgba(51, 153, 255, 0.3)" : "rgba(127, 127, 127, 0.2)",
+                isActive ? "var(--pico-primary-focus)" : "var(--pico-muted-border-color)",
               )
             }
           }}
           onMouseLeave={e => {
             if !isReadOnly {
               let target = JsxEvent.Mouse.currentTarget(e)
-              let isActive =
-                HtmlElement.getComputedColor(target) == "rgb(51, 153, 255)" ||
-                  HtmlElement.getComputedColor(target) == "#3399ff"
               HtmlElement.setBackground(
                 target,
-                isActive ? "rgba(51, 153, 255, 0.2)" : "rgba(127, 127, 127, 0.1)",
+                isActive ? "var(--pico-primary-focus)" : "var(--pico-card-border-color)",
               )
             }
           }}
@@ -262,7 +256,7 @@ let make = (
           ~width="28px",
           ~height="28px",
           ~border="none",
-          ~background="rgba(127, 127, 127, 0.1)",
+          ~background="var(--pico-card-border-color)",
           ~borderRadius="12px",
           ~cursor="pointer",
           ~transition="all 0.2s ease",
@@ -278,11 +272,11 @@ let make = (
           style={addButtonStyle}
           onMouseEnter={e => {
             let target = JsxEvent.Mouse.currentTarget(e)
-            HtmlElement.setBackground(target, "rgba(127, 127, 127, 0.2)")
+            HtmlElement.setBackground(target, "var(--pico-muted-border-color)")
           }}
           onMouseLeave={e => {
             let target = JsxEvent.Mouse.currentTarget(e)
-            HtmlElement.setBackground(target, "rgba(127, 127, 127, 0.1)")
+            HtmlElement.setBackground(target, "var(--pico-card-border-color)")
           }}
           onClick={_ => setShowEmojiPicker(_ => true)}
           disabled={isLoading}

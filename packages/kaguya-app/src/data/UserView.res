@@ -47,9 +47,9 @@ let isLocal = (user: t): bool => {
 type raw = {
   id: string,
   username: string,
-  name: Js.nullable<string>,
+  name: Nullable.t<string>,
   avatarUrl: string,
-  host: Js.nullable<string>,
+  host: Nullable.t<string>,
 }
 
 // Sury schema for user
@@ -64,7 +64,7 @@ let schema = S.object(s => {
 // Transform raw validated data to our type
 let fromRaw = (raw: raw): t => {
   // Use username if name is not provided
-  let name = raw.name->Js.Nullable.toOption->Option.getOr(raw.username)
+  let name = raw.name->Nullable.toOption->Option.getOr(raw.username)
 
   // Fix avatar URL
   let avatarUrl = UrlUtils.fixAvatarUrl(raw.avatarUrl)
@@ -74,7 +74,7 @@ let fromRaw = (raw: raw): t => {
     name,
     username: raw.username,
     avatarUrl,
-    host: raw.host->Js.Nullable.toOption,
+    host: raw.host->Nullable.toOption,
   }
 }
 

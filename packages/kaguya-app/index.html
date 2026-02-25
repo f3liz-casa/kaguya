@@ -6,11 +6,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Kaguya - A warm and simple Misskey frontend" />
-    <title>Kaguya</title>
+    <meta name="description" content="かぐや - やさしくて、しんぷるな Misskey クライアント" />
+    <title>かぐや</title>
     
-    <!-- PicoCSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <!-- IndieAuth / Misskey OAuth2: redirect_uri for authorization callback -->
+    <link rel="redirect_uri" href="/oauth-callback" />
+    
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="https://static.cloudflareinsights.com" />
+    
+    <!-- Preconnect to external CDNs with CORS support -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    
+    <!-- Preload critical CSS -->
+    <link rel="preload" href="/src/styles/theme.css" as="style" />
+    
+    <!-- Modulepreload for main JavaScript -->
+    <link rel="modulepreload" href="/lib/es6/src/Main.mjs" />
+
+    <!-- Iconify (Tabler icons) -->
+    <!-- Iconify icons are bundled via src/icons.ts -->
     
     <!-- Custom theme -->
     <link rel="stylesheet" href="/src/styles/theme.css" />
@@ -20,9 +36,16 @@
     
     <!-- Performance page styles -->
     <link rel="stylesheet" href="/src/styles/performance.css" />
+    
+    <!-- Push manual page styles -->
+    <link rel="stylesheet" href="/src/styles/push.css" />
   </head>
   <body>
+    <!-- IndieAuth h-app microformats (client metadata for Misskey OAuth2) -->
+    <div class="h-app" style="display:none">
+      <a href="/" class="u-url p-name">kaguya</a>
+    </div>
     <div id="root"></div>
-    <script type="module" src="/lib/es6/src/Main.res.js"></script>
+    <script type="module" src="/lib/es6/src/Main.mjs"></script>
   </body>
 </html>

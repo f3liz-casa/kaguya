@@ -49,18 +49,18 @@ let displayUrl = (file: t): string => {
 
 // Raw types from JSON
 type properties = {
-  width: Js.nullable<float>,
-  height: Js.nullable<float>,
+  width: Nullable.t<float>,
+  height: Nullable.t<float>,
 }
 
 type raw = {
   id: string,
   name: string,
   url: string,
-  thumbnailUrl: Js.nullable<string>,
+  thumbnailUrl: Nullable.t<string>,
   @as("type") type_: string,
   isSensitive: bool,
-  properties: Js.nullable<properties>,
+  properties: Nullable.t<properties>,
 }
 
 // Sury schema for properties
@@ -83,18 +83,18 @@ let schema = S.object(s => {
 // Transform raw validated data to our type
 let fromRaw = (raw: raw): t => {
   let width = raw.properties
-    ->Js.Nullable.toOption
-    ->Option.flatMap(p => p.width->Js.Nullable.toOption->Option.map(Float.toInt))
+    ->Nullable.toOption
+    ->Option.flatMap(p => p.width->Nullable.toOption->Option.map(Float.toInt))
   
   let height = raw.properties
-    ->Js.Nullable.toOption
-    ->Option.flatMap(p => p.height->Js.Nullable.toOption->Option.map(Float.toInt))
+    ->Nullable.toOption
+    ->Option.flatMap(p => p.height->Nullable.toOption->Option.map(Float.toInt))
 
   {
     id: raw.id,
     name: raw.name,
     url: raw.url,
-    thumbnailUrl: raw.thumbnailUrl->Js.Nullable.toOption,
+    thumbnailUrl: raw.thumbnailUrl->Nullable.toOption,
     type_: raw.type_,
     isSensitive: raw.isSensitive,
     width,

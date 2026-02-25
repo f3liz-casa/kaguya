@@ -104,11 +104,22 @@ let rec decode = (json: JSON.t): option<NoteView.t> => {
     // Decode renote recursively
     let renote = obj->Dict.get("renote")->Option.flatMap(decode)
 
+    // Decode reply (parent note) recursively
+    let reply = obj->Dict.get("reply")->Option.flatMap(decode)
+    let replyId = getString(obj, "replyId")
+
     // Also extract emojis from renote if present
     renote->Option.forEach(_ => {
-      // Re-extract from the original JSON to cache renote emojis
       obj
       ->Dict.get("renote")
+      ->Option.flatMap(JSON.Decode.object)
+      ->Option.forEach(EmojiOps.extractAndCache)
+    })
+
+    // Also extract emojis from reply if present
+    reply->Option.forEach(_ => {
+      obj
+      ->Dict.get("reply")
       ->Option.flatMap(JSON.Decode.object)
       ->Option.forEach(EmojiOps.extractAndCache)
     })
@@ -125,6 +136,9 @@ let rec decode = (json: JSON.t): option<NoteView.t> => {
       myReaction: getString(obj, "myReaction"),
       reactionAcceptance: decodeReactionAcceptance(obj->Dict.get("reactionAcceptance")),
       renote,
+      replyId,
+      reply,
+      uri: getString(obj, "uri"),
     }
 
     note

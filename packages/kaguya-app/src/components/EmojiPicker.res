@@ -125,26 +125,26 @@ let make = (
     onClick={_ => onClose()}
     role="dialog"
     ariaModal={true}
-    ariaLabel="Emoji picker"
+    ariaLabel="絵文字ピッカー"
   >
     <div className="emoji-picker-modal" onClick={e => e->JsxEvent.Mouse.stopPropagation}>
       <div className="emoji-picker-header">
         <input
           className="emoji-search"
           type_="text"
-          placeholder="Search emojis..."
+          placeholder="絵文字を検索..."
           value={searchQuery}
           onInput={e => {
             let target = JsxEvent.Form.target(e)
             let value = EventTarget.getValue(target)
             setSearchQuery(_ => value)
           }}
-          ariaLabel="Search emojis"
+          ariaLabel="絵文字を検索"
         />
         <button
           className="emoji-close"
           onClick={_ => onClose()}
-          ariaLabel="Close emoji picker"
+          ariaLabel="絵文字ピッカーを閉じる"
           type_="button"
         >
           {Preact.string("×")}
@@ -162,7 +162,7 @@ let make = (
             ariaSelected={selectedCategory->Option.isNone}
             type_="button"
           >
-            {Preact.string("All")}
+            {Preact.string("すべて")}
           </button>
           {categories
           ->Array.map(cat => {
@@ -187,7 +187,7 @@ let make = (
       <div
         className="emoji-grid"
         role="grid"
-        ariaLabel="Emoji list"
+        ariaLabel="絵文字一覧"
         onScroll={e => {
           let target = JsxEvent.UI.target(e)
           let scrollTop = EventTarget.getScrollTop(target)
@@ -196,7 +196,7 @@ let make = (
       >
         {if filteredEmojis->Array.length == 0 {
           <div className="emoji-empty" role="status">
-            <p> {Preact.string("No emojis found")} </p>
+            <p> {Preact.string("絵文字が見つかりません")} </p>
           </div>
         } else {
           <div className="emoji-grid-content" style={contentStyle}>
@@ -211,7 +211,7 @@ let make = (
                     onClose()
                   }}
                   title={emoji.name}
-                  ariaLabel={"Select emoji " ++ emoji.name}
+                  ariaLabel={emoji.name ++ " を選択"}
                   type_="button"
                 >
                   <img src={emoji.url} alt={":" ++ emoji.name ++ ":"} />

@@ -1,0 +1,8 @@
+# Push Server — ignore secrets and data
+.env
+*.db
+*.db-wal
+*.db-shm
+_build/
+deps/
+node_modules/

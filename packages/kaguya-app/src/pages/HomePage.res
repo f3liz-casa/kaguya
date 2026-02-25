@@ -24,24 +24,48 @@ let getExnMessage = (exn: exn): string => {
 let make = () => {
   let (state, setState) = PreactHooks.useState(() => Loading)
 
-  // Load all available timelines on mount
-  PreactHooks.useEffect0(() => {
+  // Load all available timelines when client becomes available
+  PreactSignals.useSignalEffect(() => {
     let loadTimelines = async () => {
-      switch PreactSignals.value(AppState.client) {
+      let clientOpt = PreactSignals.value(AppState.client)
+      
+      switch clientOpt {
       | Some(client) => {
           // Start with standard timelines
           let standardTimelines = [
-            {type_: #home, name: "Home", category: #standard},
-            {type_: #local, name: "Local", category: #standard},
-            {type_: #global, name: "Global", category: #standard},
-            {type_: #hybrid, name: "Social", category: #standard},
+            {type_: #home, name: "ホーム", category: #standard},
+            {type_: #local, name: "ローカル", category: #standard},
+            {type_: #global, name: "グローバル", category: #standard},
+            {type_: #hybrid, name: "ソーシャル", category: #standard},
           ]
 
           // Fetch custom timelines
           let customItems = []
 
-          // Fetch antennas
-          let antennasResult = await client->Misskey.CustomTimelines.antennas
+          // Try to use cached data first, otherwise fetch from API in parallel
+          let (antennasResult, listsResult, channelsResult) = switch (
+            AppInitializer.getCachedAntennas(),
+            AppInitializer.getCachedLists(),
+            AppInitializer.getCachedChannels(),
+          ) {
+          | (Some(cachedAntennas), Some(cachedLists), Some(cachedChannels)) => {
+              Console.log("HomePage: Using cached timeline data")
+              (cachedAntennas, cachedLists, cachedChannels)
+            }
+          | _ => {
+              Console.log("HomePage: Fetching timeline data from API in parallel")
+              // No cache available, fetch all in parallel using Promise.all3 for 3 promises
+              let (antennasResult, listsResult, channelsResult) = await Promise.all3((
+                client->Misskey.CustomTimelines.antennas,
+                client->Misskey.CustomTimelines.lists,
+                client->Misskey.CustomTimelines.channels,
+              ))
+              
+              (antennasResult, listsResult, channelsResult)
+            }
+          }
+
+          // Process antennas
           switch antennasResult {
           | Ok(antennas) =>
             antennas->Array.forEach(antenna => {
@@ -58,8 +82,7 @@ let make = () => {
           | Error(_) => () // Silently ignore antenna fetch errors
           }
 
-          // Fetch user lists
-          let listsResult = await client->Misskey.CustomTimelines.lists
+          // Process lists
           switch listsResult {
           | Ok(lists) =>
             lists->Array.forEach(list => {
@@ -76,8 +99,7 @@ let make = () => {
           | Error(_) => () // Silently ignore list fetch errors
           }
 
-          // Fetch channels
-          let channelsResult = await client->Misskey.CustomTimelines.channels
+          // Process channels
           switch channelsResult {
           | Ok(channels) =>
             channels->Array.forEach(channel => {
@@ -105,7 +127,7 @@ let make = () => {
     }
 
     let _ = loadTimelines()
-    None
+    None // No cleanup needed
   })
 
   let selectTimeline = (timeline: timelineItem) => {

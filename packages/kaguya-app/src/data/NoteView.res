@@ -17,6 +17,9 @@ type rec t = {
   myReaction: option<string>,
   reactionAcceptance: option<SharedTypes.reactionAcceptance>,
   renote: option<t>, // Recursive for renotes
+  replyId: option<string>,
+  reply: option<t>, // Parent note if this is a reply
+  uri: option<string>, // ActivityPub URI (set for federated notes, absent for local)
 }
 
 // ============================================================

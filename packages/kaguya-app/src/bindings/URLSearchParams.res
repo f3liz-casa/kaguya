@@ -3,7 +3,7 @@
 
 type t
 
-@new
+@new @scope("globalThis")
 external make: string => t = "URLSearchParams"
 
 @send

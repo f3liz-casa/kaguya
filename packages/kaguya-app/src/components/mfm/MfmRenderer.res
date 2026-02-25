@@ -21,7 +21,8 @@ let getPropNullableString = (props: option<Dict.t<JSON.t>>, key: string): option
 }
 
 // Render a single MFM node
-let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
+// contextHost: the instance the content was fetched from (for resolving null hosts in mentions)
+let rec renderNode = (~contextHost: string, node: Mfm.node, key: int): Preact.element => {
   let nodeType = node.type_
 
   switch nodeType {
@@ -37,7 +38,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
     switch node.children {
     | Some(children) =>
       <strong key={Int.toString(key)}>
-        {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+        {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
       </strong>
     | None => Preact.null
     }
@@ -47,7 +48,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
     switch node.children {
     | Some(children) =>
       <em key={Int.toString(key)}>
-        {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+        {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
       </em>
     | None => Preact.null
     }
@@ -57,7 +58,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
     switch node.children {
     | Some(children) =>
       <del key={Int.toString(key)}>
-        {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+        {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
       </del>
     | None => Preact.null
     }
@@ -67,7 +68,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
     switch node.children {
     | Some(children) =>
       <small key={Int.toString(key)}>
-        {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+        {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
       </small>
     | None => Preact.null
     }
@@ -96,7 +97,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
     switch node.children {
     | Some(children) =>
       <blockquote key={Int.toString(key)} className="mfm-quote">
-        {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+        {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
       </blockquote>
     | None => Preact.null
     }
@@ -106,7 +107,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
     switch node.children {
     | Some(children) =>
       <div key={Int.toString(key)} className="mfm-center">
-        {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+        {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
       </div>
     | None => Preact.null
     }
@@ -145,7 +146,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
           rel="noopener noreferrer"
           className={silent ? "mfm-link mfm-link-silent" : "mfm-link"}
         >
-          {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+          {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
         </a>
       | None => Preact.null
       }
@@ -155,18 +156,28 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
   | "mention" => {
       let username = getPropString(node.props, "username")->Option.getOr("unknown")
       let host = getPropNullableString(node.props, "host")
-      let acct = getPropString(node.props, "acct")->Option.getOr("@" ++ username)
 
-      <a
+      // Resolve host: explicit host > contextHost for local users
+      let mentionHost = switch host {
+      | Some(h) => h
+      | None => contextHost
+      }
+      // URL: always full @username@host
+      let href = `/@${username}@${mentionHost}`
+      // Display: short if local to context, full if remote
+      let displayAcct = if mentionHost == contextHost {
+        `@${username}`
+      } else {
+        `@${username}@${mentionHost}`
+      }
+
+      <Wouter.Link
         key={Int.toString(key)}
-        href={switch host {
-        | Some(h) => `https://${h}/@${username}`
-        | None => `/@${username}`
-        }}
+        href
         className="mfm-mention"
       >
-        {Preact.string(acct)}
-      </a>
+        {Preact.string(displayAcct)}
+      </Wouter.Link>
     }
 
   // Hashtag
@@ -248,7 +259,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
     | Some(query) =>
       <div key={Int.toString(key)} className="mfm-search">
         <span> {Preact.string(query)} </span>
-        <button className="mfm-search-button"> {Preact.string("Search")} </button>
+        <button className="mfm-search-button"> {Preact.string("検索")} </button>
       </div>
     | None => Preact.null
     }
@@ -260,7 +271,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
       switch node.children {
       | Some(children) =>
         <span key={Int.toString(key)} className={`mfm-fn mfm-fn-${name}`}>
-          {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+          {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
         </span>
       | None => Preact.null
       }
@@ -271,7 +282,7 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
     switch node.children {
     | Some(children) =>
       <span key={Int.toString(key)} className="mfm-plain">
-        {children->Array.mapWithIndex((child, i) => renderNode(child, i))->Preact.array}
+        {children->Array.mapWithIndex((child, i) => renderNode(~contextHost, child, i))->Preact.array}
       </span>
     | None => Preact.null
     }
@@ -283,9 +294,14 @@ let rec renderNode = (node: Mfm.node, key: int): Preact.element => {
 
 // Component to render MFM text
 @jsx.component
-let make = (~text: string, ~parseSimple: bool=false) => {
+let make = (~text: string, ~parseSimple: bool=false, ~contextHost: option<string>=?) => {
   // Track render performance
   let _ = PerfMonitor.useRenderMetrics(~component="MfmRenderer")
+  let localHost = PreactSignals.value(AppState.instanceName)
+  let ctxHost = switch contextHost {
+  | Some(h) => h
+  | None => localHost
+  }
 
   let nodes = if parseSimple {
     Mfm.parseSimple(text)
@@ -293,7 +309,13 @@ let make = (~text: string, ~parseSimple: bool=false) => {
     Mfm.parse(text)
   }
 
-  <div className="mfm-content">
-    {nodes->Array.mapWithIndex((node, i) => renderNode(node, i))->Preact.array}
-  </div>
+  if parseSimple {
+    <span className="mfm-content">
+      {nodes->Array.mapWithIndex((node, i) => renderNode(~contextHost=ctxHost, node, i))->Preact.array}
+    </span>
+  } else {
+    <div className="mfm-content">
+      {nodes->Array.mapWithIndex((node, i) => renderNode(~contextHost=ctxHost, node, i))->Preact.array}
+    </div>
+  }
 }

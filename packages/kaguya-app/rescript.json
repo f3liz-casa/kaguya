@@ -12,9 +12,9 @@
       "in-source": false
     }
   ],
-  "suffix": ".res.js",
+  "suffix": ".mjs",
   "dependencies": [
-    "rescript-misskey",
+    "@f3liz/rescript-misskey-api",
     "rescript-mfm",
     "sury"
   ],

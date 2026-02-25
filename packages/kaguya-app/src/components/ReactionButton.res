@@ -21,8 +21,8 @@ let make = (~reaction: string, ~count: int, ~reactionEmojis: Dict.t<string>) => 
   )
 
   let emojiStyle = Style.make(
-    ~width="14px",
-    ~height="14px",
+    ~height="1.25em",
+    ~width="auto",
     ~flexShrink="0",
     ~objectFit="contain",
     (),

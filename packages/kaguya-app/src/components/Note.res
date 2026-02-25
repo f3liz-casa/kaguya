@@ -32,13 +32,13 @@ module ImageLightbox = {
       onClick={_ => onClose()}
       role="dialog"
       ariaModal={true}
-      ariaLabel="Image viewer"
+      ariaLabel="画像ビューア"
     >
       <div className="lightbox-content" onClick={e => e->JsxEvent.Mouse.stopPropagation}>
         <button
           className="lightbox-close"
           onClick={_ => onClose()}
-          ariaLabel="Close image viewer"
+          ariaLabel="画像ビューアを閉じる"
           type_="button"
         >
           {Preact.string("×")}
@@ -59,28 +59,18 @@ module ImageAttachment = {
 
     let thumbnailUrl = file.thumbnailUrl->Option.getOr(file.url)
 
-    // Calculate aspect ratio for proper display
-    let aspectRatio = FileView.aspectRatio(file)
-
     // Only render if it's an image
     if FileView.isImage(file) && file.url != "" {
-      // Create style object for aspect ratio
-      let imageStyle = switch aspectRatio {
-      | Some(ratio) => Style.make(~aspectRatio=Float.toString(ratio), ())
-      | None => Style.make()
-      }
-
       let cursorStyle = Style.make(~cursor=showSensitive ? "zoom-in" : "default", ())
 
       <>
         <div
           className="image-attachment"
-          style={imageStyle}
           role="button"
           tabIndex={showSensitive ? 0 : -1}
           ariaLabel={file.isSensitive && !showSensitive
-            ? "Sensitive image, click to reveal"
-            : "Click to view full image: " ++ file.name}
+            ? "閲覧注意の画像、タップで表示"
+            : "画像を拡大: " ++ file.name}
         >
           {if file.isSensitive && !showSensitive {
             <div
@@ -88,12 +78,12 @@ module ImageAttachment = {
               onClick={_ => setShowSensitive(_ => true)}
               role="button"
               tabIndex={0}
-              ariaLabel="Reveal sensitive content"
+              ariaLabel="閲覧注意のコンテンツを表示"
             >
               <div className="sensitive-warning" ariaHidden={true}>
                 <span className="sensitive-icon"> {Preact.string("⚠️")} </span>
-                <span className="sensitive-text"> {Preact.string("Sensitive content")} </span>
-                <small className="sensitive-hint"> {Preact.string("Click to reveal")} </small>
+                <span className="sensitive-text"> {Preact.string("閲覧注意")} </span>
+                <small className="sensitive-hint"> {Preact.string("タップで表示")} </small>
               </div>
             </div>
           } else {
@@ -106,6 +96,8 @@ module ImageAttachment = {
                 ? "image-sensitive-hidden"
                 : "image-placeholder"}
               src={thumbnailUrl}
+              width=?{file.width->Option.map(w => Int.toString(w))}
+              height=?{file.height->Option.map(h => Int.toString(h))}
               alt=""
               ariaHidden={true}
               role="presentation"
@@ -123,6 +115,8 @@ module ImageAttachment = {
               "image-content image-loading"
             }}
             src={file.url}
+            width=?{file.width->Option.map(w => Int.toString(w))}
+            height=?{file.height->Option.map(h => Int.toString(h))}
             alt={file.name}
             loading=#lazy
             onLoad={_ => setImageLoaded(_ => true)}
@@ -168,8 +162,8 @@ module ImageGallery = {
 
       let imageCount = imageFiles->Array.length
       let galleryLabel = switch imageCount {
-      | 1 => "Image attachment"
-      | count => Int.toString(count) ++ " image attachments"
+      | 1 => "画像"
+      | count => Int.toString(count) ++ " 枚の画像"
       }
 
       <div className={gridClass} role="group" ariaLabel={galleryLabel}>
@@ -186,15 +180,138 @@ module ImageGallery = {
 }
 
 // ============================================================
+// Note Actions Footer
+// ============================================================
+
+module NoteActions = {
+  @jsx.component
+  let make = (~noteId: string, ~noteHost: string, ~reactionAcceptance: option<SharedTypes.reactionAcceptance>=?) => {
+    let (_, navigate) = Wouter.useLocation()
+    let (isRenoting, setIsRenoting) = PreactHooks.useState(() => false)
+    let (showEmojiPicker, setShowEmojiPicker) = PreactHooks.useState(() => false)
+    let isLoggedIn = PreactSignals.value(AppState.isLoggedIn)
+    let isReadOnly = AppState.isReadOnlyMode()
+
+    let handleReply = (_: JsxEvent.Mouse.t) => {
+      navigate("/notes/" ++ noteId ++ "/" ++ noteHost)
+    }
+
+    let handleRenote = (_: JsxEvent.Mouse.t) => {
+      if isLoggedIn && !isReadOnly && !isRenoting {
+        let _ = (async () => {
+          setIsRenoting(_ => true)
+          switch PreactSignals.value(AppState.client) {
+          | Some(client) =>
+            let renoteIdOpt = Some(noteId)
+            let result = await client->Misskey.Notes.create("", ~renoteId=?renoteIdOpt, ())
+            switch result {
+            | Ok(_) => ToastState.showSuccess("リノートしました")
+            | Error(msg) => ToastState.showError("リノートに失敗しました: " ++ msg)
+            }
+          | None => ToastState.showError("接続されていません")
+          }
+          setIsRenoting(_ => false)
+        })()
+      }
+    }
+
+    let handleEmojiSelect = (emoji: string) => {
+      setShowEmojiPicker(_ => false)
+      // Trigger reaction via ReactionBar logic
+      let _ = (async () => {
+        switch PreactSignals.value(AppState.client) {
+        | Some(client) =>
+          let result = await client->Misskey.Notes.react(noteId, emoji)
+          switch result {
+          | Ok(_) => ()
+          | Error(msg) => ToastState.showError("リアクションに失敗しました: " ++ msg)
+          }
+        | None => ()
+        }
+      })()
+    }
+
+    <div className="note-actions">
+      <button
+        className="note-action-btn"
+        onClick={handleReply}
+        title="返信"
+        type_="button"
+        ariaLabel="返信"
+      >
+        <iconify-icon icon="tabler:arrow-back-up" />
+      </button>
+      <button
+        className={"note-action-btn" ++ (if isRenoting { " loading" } else { "" })}
+        onClick={handleRenote}
+        title="リノート"
+        type_="button"
+        ariaLabel="リノート"
+        disabled={isRenoting || !isLoggedIn || isReadOnly}
+      >
+        <iconify-icon icon="tabler:repeat" />
+      </button>
+      {if isLoggedIn && !isReadOnly {
+        <>
+          <button
+            className="note-action-btn"
+            onClick={_ => setShowEmojiPicker(_ => true)}
+            title="リアクション"
+            type_="button"
+            ariaLabel="リアクションを追加"
+          >
+            <iconify-icon icon="tabler:plus" />
+          </button>
+          {if showEmojiPicker {
+            switch reactionAcceptance {
+            | Some(acceptance) =>
+              <EmojiPicker
+                onSelect={handleEmojiSelect}
+                onClose={() => setShowEmojiPicker(_ => false)}
+                reactionAcceptance={acceptance}
+              />
+            | None =>
+              <EmojiPicker
+                onSelect={handleEmojiSelect}
+                onClose={() => setShowEmojiPicker(_ => false)}
+              />
+            }
+          } else {
+            Preact.null
+          }}
+        </>
+      } else {
+        Preact.null
+      }}
+      <button
+        className="note-action-btn note-action-more"
+        title="その他"
+        type_="button"
+        ariaLabel="その他"
+      >
+        <iconify-icon icon="tabler:dots" />
+      </button>
+    </div>
+  }
+}
+
+// ============================================================
 // Main Note Component
 // ============================================================
 
 // Internal component that renders a decoded note
 module NoteView = {
   @jsx.component
-  let make = (~note: NoteView.t) => {
+  let make = (~note: NoteView.t, ~noteHost: option<string>=?) => {
     // Track render performance
     let _ = PerfMonitor.useRenderMetrics(~component="Note")
+    let (_, navigate) = Wouter.useLocation()
+    let localHost = PreactSignals.value(AppState.instanceName)
+    // Use provided noteHost (e.g., from NotePage) or fall back to active account's host
+    let effectiveHost = switch noteHost {
+    | Some(h) => h
+    | None => localHost
+    }
 
     // Content warning state
     let (showContent, setShowContent) = PreactHooks.useState(() =>
@@ -207,33 +324,78 @@ module NoteView = {
 
     let isPureRenote = NoteView.isPureRenote(note)
 
-    <article className="note" role="article" ariaLabel={"Note by " ++ note.user.name}>
+    let handleNoteClick = (e: JsxEvent.Mouse.t) => {
+      // Don't navigate if clicking a link, button, or interactive element
+      let target: Dom.element = e->JsxEvent.Mouse.target->Obj.magic
+      let tagName: string = (target->Obj.magic)["tagName"]
+      let isInteractive = tagName == "A" || tagName == "BUTTON" || tagName == "IMG" || tagName == "INPUT"
+      // Check if target or parent is inside an interactive element
+      let closest: Nullable.t<Dom.element> = (target->Obj.magic)["closest"]("a, button, .reaction-button, .lightbox-overlay, .sensitive-overlay, .image-attachment")
+      if !isInteractive && Nullable.isNullable(closest) {
+        navigate("/notes/" ++ note.id ++ "/" ++ effectiveHost)
+      }
+    }
+
+    <article
+      className="note note-clickable"
+      role="article"
+      ariaLabel={note.user.name ++ " のノート"}
+      onClick={handleNoteClick}
+    >
+      // Reply parent (shown as compact, semi-transparent context)
+      {switch note.reply {
+      | Some(parent) =>
+        <div className="note-reply-parent">
+          <div className="note-reply-connector" />
+          <div className="note-reply-parent-content">
+            <NoteHeader user={parent.user} createdAt={parent.createdAt} noteId={parent.id} contextHost={effectiveHost} />
+            {switch parent.text {
+            | Some(t) =>
+              <div className="note-text">
+                <MfmRenderer text={t} contextHost={effectiveHost} />
+              </div>
+            | None => Preact.null
+            }}
+          </div>
+        </div>
+      | None => Preact.null
+      }}
+
       {
         // Show renote indicator
         if isPureRenote {
           <div
-            className="renote-indicator" role="status" ariaLabel={note.user.name ++ " renoted this"}
+            className="renote-indicator" role="status" ariaLabel={note.user.name ++ " がリノート"}
           >
-            <small> {Preact.string(note.user.name ++ " renoted")} </small>
+            <small> <MfmRenderer text={note.user.name} parseSimple=true /> {Preact.string(" がリノート")} </small>
           </div>
         } else {
           Preact.null
         }
       }
 
-      <NoteHeader user={note.user} createdAt={note.createdAt} />
+      <NoteHeader user={note.user} createdAt={note.createdAt} noteId={note.id} contextHost={effectiveHost} />
 
-      <NoteContent note showContent onToggleCw={handleToggleCw} />
+      <NoteContent note showContent onToggleCw={handleToggleCw} contextHost={effectiveHost} />
 
       {switch // Handle renote content
       note.renote {
       | Some(renoteData) if isPureRenote => // Render renoted note
-        <div className="renoted-note">
-          <NoteHeader user={renoteData.user} createdAt={renoteData.createdAt} />
+        <div className="renoted-note renoted-note-clickable" onClick={e => {
+          let target: Dom.element = e->JsxEvent.Mouse.target->Obj.magic
+          let tagName: string = (target->Obj.magic)["tagName"]
+          let isInteractive = tagName == "A" || tagName == "BUTTON" || tagName == "IMG" || tagName == "INPUT"
+          let closest: Nullable.t<Dom.element> = (target->Obj.magic)["closest"]("a, button, .reaction-button, .lightbox-overlay, .sensitive-overlay, .image-attachment")
+          if !isInteractive && Nullable.isNullable(closest) {
+            e->JsxEvent.Mouse.stopPropagation
+            navigate("/notes/" ++ renoteData.id ++ "/" ++ effectiveHost)
+          }
+        }}>
+          <NoteHeader user={renoteData.user} createdAt={renoteData.createdAt} noteId={renoteData.id} contextHost={effectiveHost} />
           {switch renoteData.text {
           | Some(t) =>
             <div className="note-text">
-              <MfmRenderer text={t} />
+              <MfmRenderer text={t} contextHost={effectiveHost} />
             </div>
           | None => Preact.null
           }}
@@ -258,6 +420,11 @@ module NoteView = {
             reactionEmojis={note.reactionEmojis}
             myReaction={note.myReaction}
             reactionAcceptance={note.reactionAcceptance}
+          />
+          <NoteActions
+            noteId={note.id}
+            noteHost={effectiveHost}
+            reactionAcceptance=?{note.reactionAcceptance}
           />
         </>
       } else {

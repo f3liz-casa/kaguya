@@ -37,141 +37,237 @@ let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
 
   let (state, setState) = PreactHooks.useState(() => Loading)
 
+  // Keep a stable ref to the latest state so the visibilitychange handler
+  // (mounted once in useEffect0) always sees up-to-date values.
+  let stateRef = PreactHooks.useRef(state)
+  stateRef.current = state
+  let timelineTypeRef = PreactHooks.useRef(timelineType)
+  timelineTypeRef.current = timelineType
+
   // Ref to store the streaming subscription
   let subscriptionRef = PreactHooks.useRef(None)
 
-  // Ref to track if we've already started streaming for this timeline
-  let hasStartedStreamingRef = PreactHooks.useRef(false)
+  // Fetch timeline when client becomes available or when timelineType changes
+  // We need to watch both the client signal and the timelineType prop
+  PreactHooks.useEffect2(() => {
+    // Read the current client value from the signal
+    let clientOpt = PreactSignals.value(AppState.client)
+    
+    // Cancellation token: set to true when this effect is cleaned up.
+    // Prevents a stale async fetch from overwriting state after tab switch.
+    let cancelled = ref(false)
 
-  // Fetch timeline on mount and when timelineType changes
-  PreactHooks.useEffect1(() => {
-    // Reset to loading state when timeline changes
+    // Reset to loading state immediately so old notes are not shown
     setState(_ => Loading)
-    hasStartedStreamingRef.current = false // Reset streaming flag
 
     let fetchTimeline = async () => {
-      switch PreactSignals.value(AppState.client) {
+      switch clientOpt {
       | Some(client) => {
-          let result = await client->Misskey.Notes.fetch(
-            timelineType,
-            ~limit=20,
-            (),
-          )
+          // Check if we have cached home timeline data (only for #home timeline)
+          let cachedTimelineOpt = switch timelineType {
+          | #home => AppInitializer.getCachedHomeTimeline()
+          | _ => None
+          }
+          
+          switch cachedTimelineOpt {
+          | Some(cachedResult) => {
+              if cancelled.contents { () } else {
+              Console.log("Timeline: Using cached home timeline data")
+              // Use cached data and setup stream subscription
+              switch cachedResult {
+              | Ok(rawJson) => {
+                  let notes = NoteDecoder.decodeManyFromJson(rawJson)
+                  let lastPostId = getLastNoteId(notes)
+                  
+                  // Prefetch image domains from cached notes
+                  NetworkOptimizer.extractImageDomainsFromNotes([rawJson])
+                  
+                  setState(_ => Loaded({
+                    notes,
+                    lastPostId,
+                    hasMore: Array.length(notes) >= 20,
+                    isLoadingMore: false,
+                    isStreaming: false,
+                  }))
 
-          switch result {
-          | Ok(rawJson) => {
-              let notes = NoteDecoder.decodeManyFromJson(rawJson)
-              let lastPostId = getLastNoteId(notes)
-              setState(_ => Loaded({
-                notes,
-                lastPostId,
-                hasMore: Array.length(notes) >= 20,
-                isLoadingMore: false,
-                isStreaming: false,
-              }))
+                  // Start streaming subscription after loading cached data
+                  Console.log("Starting streaming subscription...")
+                  let subscription = client->Misskey.Stream.timeline(timelineType, newNote => {
+                    Console.log("Received new note via stream")
+                    let decodedNote = NoteDecoder.decode(newNote)
+
+                    // Prefetch images for better UX
+                    decodedNote->Option.forEach(NoteOps.prefetchImages)
+
+                    setState(
+                      prev => {
+                        switch (prev, decodedNote) {
+                        | (Loaded(data), Some(noteData)) => {
+                            let shouldAdd = !noteExists(data.notes, noteData.id)
+                            if shouldAdd {
+                              Loaded({
+                                ...data,
+                                notes: [noteData]->Array.concat(data.notes),
+                              })
+                            } else {
+                              prev
+                            }
+                          }
+                        | _ => prev
+                        }
+                      },
+                    )
+                  })
+                  subscriptionRef.current = Some(subscription)
+                  setState(prev => {
+                    switch prev {
+                    | Loaded(data) => Loaded({...data, isStreaming: true})
+                    | _ => prev
+                    }
+                  })
+                  Console.log("Using cached timeline and stream active")
+                }
+              | Error(msg) => setState(_ => Error(msg))
+              }
+              }
             }
-          | Error(msg) => setState(_ => Error(msg))
+          | None => {
+              // No cache, fetch from API and setup stream in parallel
+              let notesPromise = client->Misskey.Notes.fetch(
+                timelineType,
+                ~limit=20,
+                (),
+              )
+              
+              if !cancelled.contents {
+              // Start stream subscription immediately (doesn't await the fetch)
+              Console.log("Starting streaming subscription in parallel...")
+              let subscription = client->Misskey.Stream.timeline(timelineType, newNote => {
+                Console.log("Received new note via stream")
+                let decodedNote = NoteDecoder.decode(newNote)
+
+                // Prefetch images for better UX
+                decodedNote->Option.forEach(NoteOps.prefetchImages)
+
+                setState(
+                  prev => {
+                    switch (prev, decodedNote) {
+                    | (Loaded(data), Some(noteData)) => {
+                        let shouldAdd = !noteExists(data.notes, noteData.id)
+                        if shouldAdd {
+                          Loaded({
+                            ...data,
+                            notes: [noteData]->Array.concat(data.notes),
+                          })
+                        } else {
+                          prev
+                        }
+                      }
+                    | _ => prev
+                    }
+                  },
+                )
+              })
+              subscriptionRef.current = Some(subscription)
+              
+              // Now await the notes fetch
+              let result = await notesPromise
+
+              if !cancelled.contents {
+              switch result {
+              | Ok(rawJson) => {
+                  let notes = NoteDecoder.decodeManyFromJson(rawJson)
+                  let lastPostId = getLastNoteId(notes)
+                  
+                  // Prefetch image domains from initial notes
+                  NetworkOptimizer.extractImageDomainsFromNotes([rawJson])
+                  
+                  setState(_ => Loaded({
+                    notes,
+                    lastPostId,
+                    hasMore: Array.length(notes) >= 20,
+                    isLoadingMore: false,
+                    isStreaming: true, // Already subscribed
+                  }))
+
+                  Console.log("Notes fetched and stream already active")
+                }
+              | Error(msg) => {
+                  // If fetch failed, clean up the subscription
+                  subscriptionRef.current->Option.forEach(sub => sub.dispose())
+                  subscriptionRef.current = None
+                  setState(_ => Error(msg))
+                }
+              }
+              } // end if !cancelled (after await)
+              } // end if !cancelled (before stream setup)
+            }
           }
         }
-      | None => setState(_ => Error("Not connected"))
+      | None => setState(_ => Error("接続されていません"))
       }
     }
 
     let _ = fetchTimeline()
-    None
-  }, [timelineType])
 
-  // Subscribe to realtime streaming updates after initial load
-  PreactHooks.useEffect(() => {
-    // Only subscribe if:
-    // 1. We have a client
-    // 2. State is Loaded
-    // 3. We haven't already started streaming for this timeline
-    let shouldSubscribe = switch (
-      PreactSignals.value(AppState.client),
-      state,
-      hasStartedStreamingRef.current,
-    ) {
-    | (Some(_), Loaded(_), false) => true
-    | _ => false
-    }
+    // Cleanup: cancel pending fetch, dispose subscription when timeline changes or unmounts
+    Some(() => {
+      cancelled := true
+      Console.log("Timeline unmounting or changing - cleaning up subscription...")
+      subscriptionRef.current->Option.forEach(sub => {
+        sub.dispose()
+        Console.log("Subscription disposed")
+      })
+      subscriptionRef.current = None
+    })
+  }, (PreactSignals.value(AppState.client), timelineType))
 
-    if shouldSubscribe {
-      switch PreactSignals.value(AppState.client) {
-      | Some(client) => {
-          Console.log("Starting streaming subscription...")
-          hasStartedStreamingRef.current = true
-
-          // Update state to indicate streaming is active FIRST
-          setState(prev => {
-            switch prev {
-            | Loaded(data) => {
-                Console.log("Setting isStreaming to true")
-                Loaded({...data, isStreaming: true})
-              }
-            | _ => prev
-            }
-          })
-
-          // Subscribe to timeline updates
-          let subscription = client->Misskey.Stream.timeline(timelineType, newNote => {
-            Console.log("Received new note via stream")
-            // Decode note at the boundary
-            let decodedNote = NoteDecoder.decode(newNote)
-
-            // Add new note to timeline with deduplication
-            setState(
-              prev => {
-                switch (prev, decodedNote) {
-                | (Loaded(data), Some(noteData)) => {
-                    // Check if note already exists (deduplication)
-                    let shouldAdd = !noteExists(data.notes, noteData.id)
-
-                    if shouldAdd {
-                      // Prepend new note to the beginning of the timeline
-                      Loaded({
-                        ...data,
-                        notes: [noteData]->Array.concat(data.notes),
-                      })
-                    } else {
-                      // Note already exists, no update needed
-                      prev
-                    }
+  // Catch up on missed notes when the page becomes visible again (tab switch, screen wake)
+  PreactHooks.useEffect0(() => {
+    let handleVisibility = () => {
+      let isVisible: bool = %raw(`document.visibilityState === "visible"`)
+      if isVisible {
+        switch (PreactSignals.value(AppState.client), stateRef.current) {
+        | (Some(client), Loaded(data)) => {
+            // Fetch notes newer than the newest note we have
+            let newestId = data.notes->Array.at(0)->Option.map(n => n.id)
+            let tt = timelineTypeRef.current
+            let _ = (async () => {
+              let result = await client->Misskey.Notes.fetch(
+                tt,
+                ~limit=20,
+                ~sinceId=?newestId,
+                (),
+              )
+              switch result {
+              | Ok(rawJson) => {
+                  let newNotes = NoteDecoder.decodeManyFromJson(rawJson)
+                  if Array.length(newNotes) > 0 {
+                    setState(prev => switch prev {
+                    | Loaded(d) =>
+                      let merged = Array.concat(newNotes, d.notes)
+                      Loaded({...d, notes: merged})
+                    | _ => prev
+                    })
                   }
-                | _ => prev // If decoding failed or not in Loaded state, no update
                 }
-              },
-            )
-          })
-
-          // Store subscription ref
-          subscriptionRef.current = Some(subscription)
-          Console.log("Subscription created and stored")
+              | Error(_) => () // silently ignore catch-up failures
+              }
+            })()
+          }
+        | _ => ()
         }
-      | None => Console.log("No client available for streaming")
       }
     }
-
-    None // No cleanup here - handled by separate effect
+    %raw(`document.addEventListener("visibilitychange", handleVisibility)`)
+    Some(() => {
+      %raw(`document.removeEventListener("visibilitychange", handleVisibility)`)
+    })
   })
 
-  // Cleanup subscription on unmount or timeline change
-  PreactHooks.useEffect1(() => {
-    Some(
-      () => {
-        Console.log("Timeline unmounting or changing - cleaning up subscription...")
-        subscriptionRef.current->Option.forEach(sub => {
-          sub.dispose()
-          Console.log("Subscription disposed")
-        })
-        subscriptionRef.current = None
-        hasStartedStreamingRef.current = false
-      },
-    )
-  }, [timelineType])
-
-  // Handle refresh
   let handleRefresh = async () => {
+    // Preserve streaming state during refresh
+    let wasStreaming = subscriptionRef.current->Option.isSome
     setState(_ => Loading)
 
     switch PreactSignals.value(AppState.client) {
@@ -191,13 +287,13 @@ let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
               lastPostId,
               hasMore: Array.length(notes) >= 20,
               isLoadingMore: false,
-              isStreaming: false,
+              isStreaming: wasStreaming,
             }))
           }
         | Error(msg) => setState(_ => Error(msg))
         }
       }
-    | None => setState(_ => Error("Not connected"))
+    | None => setState(_ => Error("接続されていません"))
     }
   }
 
@@ -235,6 +331,10 @@ let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
             switch result {
             | Ok(newRawJson) => {
                 let newNotes = NoteDecoder.decodeManyFromJson(newRawJson)
+                
+                // Prefetch image domains from new notes
+                NetworkOptimizer.extractImageDomainsFromNotes([newRawJson])
+                
                 let allNotes = Array.concat(notes, newNotes)
                 let newLastPostId = getLastNoteId(newNotes)
                 setState(_ => Loaded({
@@ -305,13 +405,13 @@ let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
             name
           } else {
             switch timelineType {
-            | #home => "Home"
-            | #local => "Local"
-            | #global => "Global"
-            | #hybrid => "Social"
-            | #antenna(_) => "Antenna"
-            | #list(_) => "List"
-            | #channel(_) => "Channel"
+            | #home => "ホーム"
+            | #local => "ローカル"
+            | #global => "グローバル"
+            | #hybrid => "ソーシャル"
+            | #antenna(_) => "アンテナ"
+            | #list(_) => "リスト"
+            | #channel(_) => "チャンネル"
             }
           },
         )}
@@ -320,7 +420,7 @@ let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
       | Loaded({isStreaming: true}) =>
         <span
           className="streaming-indicator"
-          title="Live updates active"
+          title="配信中"
           style={Style.make(
             ~display="inline-flex",
             ~alignItems="center",
@@ -341,28 +441,39 @@ let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
               (),
             )}
           />
-          {Preact.string("Live")}
+          {Preact.string("配信中")}
         </span>
       | _ => Preact.null
       }}
       <button className="secondary outline" onClick={onRefreshClick}>
-        {Preact.string("Refresh")}
+        {Preact.string("更新")}
       </button>
     </div>
     {switch state {
     | Loading =>
-      <div className="timeline-loading">
-        <p> {Preact.string("Loading timeline...")} </p>
+      <div className="timeline-skeleton">
+        {Array.make(~length=6, ())
+        ->Array.mapWithIndex((_, i) =>
+          <div key={Int.toString(i)} className="skeleton-note">
+            <div className="skeleton-avatar" />
+            <div className="skeleton-content">
+              <div className="skeleton-line skeleton-line-name" />
+              <div className="skeleton-line skeleton-line-long" />
+              <div className="skeleton-line skeleton-line-medium" />
+            </div>
+          </div>
+        )
+        ->Preact.array}
       </div>
     | Error(msg) =>
       <div className="timeline-error">
-        <p> {Preact.string("Error: " ++ msg)} </p>
-        <button onClick={onRefreshClick}> {Preact.string("Try again")} </button>
+        <p> {Preact.string("エラー: " ++ msg)} </p>
+        <button onClick={onRefreshClick}> {Preact.string("再試行")} </button>
       </div>
     | Loaded({notes, isLoadingMore, hasMore, isStreaming: _}) =>
       if Array.length(notes) == 0 {
         <div className="timeline-empty">
-          <p> {Preact.string("No notes yet")} </p>
+          <p> {Preact.string("ノートはまだありません")} </p>
         </div>
       } else {
         <>
@@ -378,7 +489,7 @@ let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
               <div ref={setSentinelRef->Obj.magic} className="timeline-sentinel" />
               {if isLoadingMore {
                 <div className="timeline-loading-more">
-                  <p> {Preact.string("Loading more...")} </p>
+                  <p> {Preact.string("読み込み中...")} </p>
                 </div>
               } else {
                 Preact.null
@@ -386,7 +497,7 @@ let make = (~timelineType: Misskey.Stream.timelineType, ~name: string="") => {
             </>
           } else {
             <div className="timeline-end">
-              <p> {Preact.string("No more posts")} </p>
+              <p> {Preact.string("これ以上ありません")} </p>
             </div>
           }}
         </>

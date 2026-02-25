@@ -91,11 +91,7 @@ external cancelIdleCallback: idleCallbackId => unit = "cancelIdleCallback"
 
 // Check if requestIdleCallback is supported
 let supportsIdleCallback = (): bool => {
-  try {
-    %raw(`typeof requestIdleCallback !== 'undefined'`)
-  } catch {
-  | _ => false
-  }
+  KaguyaNetwork.supportsIdleCallback()
 }
 
 // ============================================================

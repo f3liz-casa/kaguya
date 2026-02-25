@@ -12,7 +12,7 @@
       "in-source": false
     }
   ],
-  "suffix": ".res.js",
+  "suffix": ".mjs",
   "warnings": {
     "error": "+101"
   }
