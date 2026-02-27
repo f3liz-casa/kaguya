@@ -1,9 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// ServiceWorkerAPI.res - Browser Service Worker and Push Manager bindings
-
-// ============================================================
-// Types
-// ============================================================
 
 type serviceWorkerRegistration
 
@@ -25,8 +20,6 @@ type notificationPermission = [#default | #granted | #denied]
 
 type subscribeOptions
 
-// Create subscribe options with Uint8Array applicationServerKey for max compatibility
-// Convert base64url VAPID key to Uint8Array and create subscribe options
 @warning("-27")
 let makeSubscribeOptions = (vapidKey: string): subscribeOptions => {
   %raw(`
@@ -43,9 +36,7 @@ let makeSubscribeOptions = (vapidKey: string): subscribeOptions => {
   `)
 }
 
-// ============================================================
 // Service Worker Container
-// ============================================================
 
 @val @scope(("navigator", "serviceWorker"))
 external register: string => promise<serviceWorkerRegistration> = "register"
@@ -57,9 +48,7 @@ let isSupported = (): bool => {
   Nullable.isNullable(serviceWorker) == false
 }
 
-// ============================================================
 // Push Manager
-// ============================================================
 
 @get external pushManager: serviceWorkerRegistration => pushManager = "pushManager"
 
@@ -67,9 +56,7 @@ let isSupported = (): bool => {
 
 @send external getSubscription: pushManager => promise<Nullable.t<pushSubscription>> = "getSubscription"
 
-// ============================================================
 // Push Subscription
-// ============================================================
 
 @get external endpoint: pushSubscription => string = "endpoint"
 
@@ -92,9 +79,7 @@ let encodeKey = (buffer: option<Js.TypedArray2.ArrayBuffer.t>): string => {
   `)
 }
 
-// ============================================================
 // Notification Permission
-// ============================================================
 
 @val @scope("Notification")
 external permission: notificationPermission = "permission"

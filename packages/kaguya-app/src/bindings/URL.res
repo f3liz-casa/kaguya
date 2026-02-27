@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// URL.res - Minimal URL API bindings
 
 type t
 

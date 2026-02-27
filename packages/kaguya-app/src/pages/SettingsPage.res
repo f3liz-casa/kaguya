@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// SettingsPage.res - General settings page
 
 @jsx.component
 let make = () => {

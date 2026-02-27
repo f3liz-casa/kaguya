@@ -6,6 +6,8 @@ import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 import rescript from '@jihchi/vite-plugin-rescript'
 import UnoCSS from 'unocss/vite'
+import wasm from 'vite-plugin-wasm'
+import { VitePWA } from 'vite-plugin-pwa'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -16,7 +18,22 @@ export default defineConfig({
       '@kaguya-src': path.resolve(__dirname, 'src'),
     },
   },
-  plugins: [UnoCSS(), preact(), rescript(),
+  plugins: [wasm(), UnoCSS(), preact(), rescript(),
+    VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      registerType: 'autoUpdate',
+      injectManifest: {
+        injectionPoint: 'self.__SW_MANIFEST',
+        rollupFormat: 'iife', // classic format → output is sw.js (compatible with navigator.serviceWorker.register('/sw.js'))
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MiB (vendor bundle can exceed default 2 MiB limit)
+      },
+      manifest: false, // use static public/manifest.webmanifest
+      devOptions: {
+        enabled: false, // keep dev simple; push notifications tested in production
+      },
+    }),
     // OAuth2 proxy for dev server (production uses Cloudflare Worker)
     {
       name: 'oauth-proxy',

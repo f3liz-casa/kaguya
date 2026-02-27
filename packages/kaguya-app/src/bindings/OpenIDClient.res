@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// OpenIDClient.res - ReScript bindings for openid-client (panva/openid-client)
 
 // Configuration object (opaque)
 type configuration
@@ -50,7 +49,6 @@ external discovery: (
   JSON.t,
 ) => promise<configuration> = "discovery"
 
-// Build authorization URL
 @module("openid-client")
 external buildAuthorizationUrl: (
   configuration,

@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
-// MiAuthCallbackPage.res - Handle MiAuth callback and complete authentication
 
-// Helper to get URL search params
 let getSearchParams = (): URLSearchParams.t => {
   KaguyaNetwork.searchParams()->Obj.magic
 }
@@ -13,7 +11,6 @@ let make = () => {
   let (retryCount, setRetryCount) = PreactHooks.useState(() => 0)
   let maxRetries = 10 // Retry up to 10 times with exponential backoff
 
-  // Check MiAuth session when component mounts or retryCount changes
   PreactHooks.useEffect1(() => {
     let isMounted = ref(true)
     let checkAuth = async () => {
@@ -21,30 +18,16 @@ let make = () => {
         if !isMounted.contents {
           ()
         } else {
-          Console.log("MiAuthCallbackPage: Checking MiAuth session...")
 
-          // Check if session is in URL
           let params = getSearchParams()
-          let sessionFromUrl = params->URLSearchParams.get("session")
-          Console.log2("MiAuthCallbackPage: Session in URL?", sessionFromUrl->Option.isSome)
+          let _sessionFromUrl = params->URLSearchParams.get("session")
 
-          let result = await AppState.checkMiAuth()
-
-          Console.log("MiAuthCallbackPage: Got result from checkMiAuth")
-          Console.log2(
-            "MiAuthCallbackPage: Result is Ok?",
-            switch result {
-            | Ok() => true
-            | Error(_) => false
-            },
-          )
+          let result = await AuthManager.checkMiAuth()
 
           switch result {
           | Ok() => {
-              Console.log("MiAuthCallbackPage: MiAuth check successful")
               setStatus(_ => "success")
               // Redirect immediately - don't wait for component state changes
-              Console.log("MiAuthCallbackPage: Hard redirecting to home...")
               KaguyaNetwork.navigateTo("/")
             }
           | Error(err) => {
@@ -52,20 +35,18 @@ let make = () => {
 
               // Extract error message
               let errorMsg = switch err {
-              | AppState.InvalidCredentials => "Invalid credentials"
-              | AppState.NetworkError(msg) => msg
-              | AppState.UnknownError(msg) => msg
+              | AuthTypes.InvalidCredentials => "Invalid credentials"
+              | AuthTypes.NetworkError(msg) => msg
+              | AuthTypes.UnknownError(msg) => msg
               }
 
               let isPermanentError = String.includes(errorMsg, "Session information not found") || String.includes(errorMsg, "セッション")
 
               if isPermanentError {
                 // Permanent error: redirect to login immediately with hard redirect
-                Console.log("MiAuthCallbackPage: Permanent error, hard redirecting to login...")
                 setStatus(_ => "permanent_error")
                 setErrorMessage(_ => Some(errorMsg))
-                // Set the error state in AppState and hard redirect
-                PreactSignals.setValue(AppState.authState, AppState.LoginFailed(err))
+                PreactSignals.setValue(AppState.authState, AuthTypes.LoginFailed(err))
                 KaguyaNetwork.navigateTo("/")
               } else if retryCount < maxRetries {
                 // Transient error: retry with exponential backoff
@@ -73,8 +54,6 @@ let make = () => {
                 if isMounted.contents {
                   let rawDelay = 1000 * Int.fromFloat(Math.pow(2.0, ~exp=Int.toFloat(retryCount)))
                   let delay = rawDelay > 16000 ? 16000 : rawDelay
-                  Console.log2("MiAuthCallbackPage: Retrying... attempt", retryCount + 1)
-                  Console.log2("MiAuthCallbackPage: Next retry in ms:", delay)
                   setStatus(_ => "checking")
                   let _ = SetTimeout.make(() => {
                     if isMounted.contents {
@@ -84,7 +63,6 @@ let make = () => {
                 }
               } // Max retries exceeded: redirect to login with error
               else if isMounted.contents {
-                Console.log("MiAuthCallbackPage: Max retries exceeded, redirecting to login...")
                 setStatus(_ => "error")
                 setErrorMessage(_ => Some(errorMsg))
                 // Wait 2 seconds to show error, then redirect

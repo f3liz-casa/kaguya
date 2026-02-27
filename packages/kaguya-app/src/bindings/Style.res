@@ -1,21 +1,14 @@
 // SPDX-License-Identifier: MPL-2.0
-// Style.res - Inline style helpers for JSX
 
-// ============================================================
 // Style Type
-// ============================================================
 
 type t = JsxDOM.style
 
-// ============================================================
 // Style Creation
-// ============================================================
 
-// Create empty style object
 @obj
 external empty: unit => t = ""
 
-// Create style with single property
 @obj
 external make: (
   ~display: string=?,

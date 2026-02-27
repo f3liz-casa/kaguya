@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// App.res - Root application component with routing
 
 // Route wrapper components to extract params from wouter
 module NotePageRoute = {
@@ -12,7 +11,6 @@ module NotePageRoute = {
   }
 }
 
-// Parse user acct string: "username" or "username@host"
 let parseAcct = (acct: string): (string, option<string>) => {
   switch acct->String.indexOf("@") {
   | -1 => (acct, None)
@@ -40,12 +38,10 @@ module CatchAllRoute = {
 
 @jsx.component
 let make = () => {
-  // Get current location early
   let (location, _) = Wouter.useLocation()
 
-  // Restore session on mount
   PreactHooks.useEffect0(() => {
-    let _ = AppState.restoreSession()
+    let _ = AuthManager.restoreSession()
     None
   })
 
@@ -89,7 +85,6 @@ let make = () => {
       </Wouter.Route>
     </Wouter.Switch>
 
-  // Render based on auth state and location
   <>
     <Toast />
     {switch authState {
@@ -98,16 +93,9 @@ let make = () => {
         <MiAuthCallbackPage />
       } else if location->String.startsWith("/oauth-callback") {
         <OAuthCallbackPage />
-      } else if isSwitchingAccount {
-        // Keep showing the current content during account switch (seamless transition)
-        loggedInRoutes
       } else {
-        // Initial session restore — show loading spinner
-        <main className="container">
-          <div className="loading-container">
-            <p> {Preact.string("読み込み中...")} </p>
-          </div>
-        </main>
+        // Components will handle their own loading states
+        loggedInRoutes
       }
     | LoggedIn => loggedInRoutes
     | LoggedOut | LoginFailed(_) => // Check if we're on a callback route

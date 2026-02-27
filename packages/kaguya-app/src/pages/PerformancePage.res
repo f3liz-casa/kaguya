@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// PerformancePage.res - Performance monitoring page
 
 @jsx.component
 let make = () => {
@@ -27,18 +26,15 @@ let make = () => {
   let emojiCount = PreactSignals.value(EmojiStore.emojiCount)
   let emojiLoadState = PreactSignals.value(EmojiStore.loadState)
 
-  // Format duration in ms
   let formatDuration = (ms: float): string => {
     Float.toFixed(ms, ~digits=2) ++ "ms"
   }
 
-  // Format bytes
   let formatBytes = (bytes: float): string => {
     let mb = bytes /. 1024.0 /. 1024.0
     Float.toFixed(mb, ~digits=2) ++ " MB"
   }
 
-  // Format percentage
   let formatPercent = (pct: float): string => {
     Float.toFixed(pct, ~digits=1) ++ "%"
   }
@@ -57,7 +53,6 @@ let make = () => {
       }
     })
 
-    // Convert to array and sort by count (descending)
     statsMap
     ->Dict.toArray
     ->Array.map(((component, (count, totalDuration))) => {
@@ -87,7 +82,6 @@ let make = () => {
       }
     })
 
-    // Convert to array and sort by total duration (slowest first)
     statsMap
     ->Dict.toArray
     ->Array.map(((endpoint, (count, totalDuration, successCount))) => {
@@ -325,10 +319,10 @@ let make = () => {
           <div className="stat-value">
             {Preact.string(
               switch emojiLoadState {
-              | EmojiStore.NotLoaded => "Not Loaded"
-              | Loading => "Loading..."
-              | Loaded => "Loaded"
-              | LoadError(msg) => "Error: " ++ msg
+              | EmojiTypes.NotLoaded => "Not Loaded"
+              | EmojiTypes.Loading => "Loading..."
+              | EmojiTypes.Loaded => "Loaded"
+              | EmojiTypes.LoadError(msg) => "Error: " ++ msg
               },
             )}
           </div>

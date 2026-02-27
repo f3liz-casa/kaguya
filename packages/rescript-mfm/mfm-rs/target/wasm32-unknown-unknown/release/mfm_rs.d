@@ -1,1 +1,0 @@
-/Users/nyanrus/repos/rescript/kaguya/packages/rescript-mfm/mfm-rs/target/wasm32-unknown-unknown/release/mfm_rs.wasm: /Users/nyanrus/repos/rescript/kaguya/packages/rescript-mfm/mfm-rs/src/lib.rs /Users/nyanrus/repos/rescript/kaguya/packages/rescript-mfm/mfm-rs/src/parser.rs

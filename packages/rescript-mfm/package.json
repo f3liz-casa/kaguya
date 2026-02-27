@@ -1,23 +1,24 @@
 {
   "name": "rescript-mfm",
-  "version": "0.1.0",
-  "description": "ReScript bindings and idiomatic wrappers for mfm-js",
+  "version": "0.2.0",
+  "description": "ReScript MFM parser powered by Rust/WASM",
   "keywords": [
     "mfm",
     "rescript",
-    "bindings",
     "misskey",
-    "parser"
+    "parser",
+    "wasm"
   ],
   "author": "",
   "license": "MIT",
   "scripts": {
+    "build:wasm": "cd mfm-rs && wasm-pack build --target bundler",
     "build": "rescript",
     "clean": "rescript clean",
     "watch": "rescript build -w"
   },
   "dependencies": {
-    "mfm-js": "^0.25.0"
+    "mfm-rs": "file:./mfm-rs/pkg"
   },
   "devDependencies": {
     "rescript": "^12.1.0"

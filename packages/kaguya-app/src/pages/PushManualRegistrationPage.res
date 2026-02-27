@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// PushManualRegistrationPage.res - Manual push registration for read-only or private accounts
 
 @jsx.component
 let make = () => {
@@ -37,7 +36,6 @@ let make = () => {
           let registration = await ServiceWorkerAPI.register("/sw.js")
           let pm = ServiceWorkerAPI.pushManager(registration)
           
-          // Check for existing subscription first to avoid breaking other account registrations
           let existingSub = await ServiceWorkerAPI.getSubscription(pm)
           let subscription = switch existingSub->Nullable.toOption {
           | Some(sub) => sub

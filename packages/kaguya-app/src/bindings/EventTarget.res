@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-// EventTarget.res - Event target bindings for DOM events
 
-// ============================================================
 // Common Properties - works with any JS object with these properties
-// ============================================================
 
 @get
 external getValue: 'a => string = "value"

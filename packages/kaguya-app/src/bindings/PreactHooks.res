@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-// PreactHooks.res - Preact hooks bindings
 
-// ============================================================
 // State Hooks
-// ============================================================
 
 @module("preact/hooks")
 external useState: ('a => 'state) => ('state, ('state => 'state) => unit) = "useState"
@@ -12,9 +9,7 @@ external useState: ('a => 'state) => ('state, ('state => 'state) => unit) = "use
 external useReducer: (('state, 'action) => 'state, 'state) => ('state, 'action => unit) =
   "useReducer"
 
-// ============================================================
 // Effect Hooks
-// ============================================================
 
 @module("preact/hooks")
 external useEffect: (unit => option<unit => unit>) => unit = "useEffect"
@@ -41,18 +36,14 @@ external useLayoutEffect0: (unit => option<unit => unit>, @as(json`[]`) _) => un
 @module("preact/hooks")
 external useLayoutEffect1: (unit => option<unit => unit>, array<'a>) => unit = "useLayoutEffect"
 
-// ============================================================
 // Ref Hooks
-// ============================================================
 
 type ref<'a> = {mutable current: 'a}
 
 @module("preact/hooks")
 external useRef: 'a => ref<'a> = "useRef"
 
-// ============================================================
 // Memoization Hooks
-// ============================================================
 
 @module("preact/hooks")
 external useMemo: (unit => 'a, array<'dep>) => 'a = "useMemo"
@@ -75,16 +66,12 @@ external useCallback0: ('a, @as(json`[]`) _) => 'a = "useCallback"
 @module("preact/hooks")
 external useCallback1: ('a, array<'dep>) => 'a = "useCallback"
 
-// ============================================================
 // Context Hook
-// ============================================================
 
 @module("preact/hooks")
 external useContext: Preact.component<{..}> => 'a = "useContext"
 
-// ============================================================
 // Other Hooks
-// ============================================================
 
 @module("preact/hooks")
 external useErrorBoundary: unit => (option<exn>, unit => unit) = "useErrorBoundary"

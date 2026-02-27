@@ -1,21 +1,15 @@
 // SPDX-License-Identifier: MPL-2.0
-// Document.res - Document API bindings
 
-// ============================================================
 // Document Body Bindings
-// ============================================================
 
 @val @scope("document") @scope("body") @scope("style")
 external setOverflow: string => unit = "overflow"
 
-// Helper to set body overflow
 let setBodyOverflow = (value: string): unit => {
   setOverflow(value)
 }
 
-// ============================================================
 // Document Event Listener Bindings
-// ============================================================
 
 @val @scope("document")
 external addEventListenerKeydown: (@as("keydown") _, JsxEvent.Keyboard.t => unit) => unit =
@@ -31,3 +25,6 @@ external addEventListener: (string, 'event => unit) => unit = "addEventListener"
 
 @val @scope("document")
 external removeEventListener: (string, 'event => unit) => unit = "removeEventListener"
+
+@val @scope("document")
+external visibilityState: string = "visibilityState"

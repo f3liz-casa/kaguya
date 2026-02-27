@@ -4,3 +4,4 @@ node_modules/
 *.res.js
 .merlin
 .bsb.lock
+mfm-rs/target/

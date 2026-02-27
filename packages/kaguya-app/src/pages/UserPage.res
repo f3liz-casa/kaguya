@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// UserPage.res - User profile page
 
 type profileState =
   | Loading
@@ -13,7 +12,6 @@ type profileState =
     })
   | Error(string)
 
-// Helper to get last note ID
 let getLastNoteId = (notes: array<NoteView.t>): option<string> => {
   notes->Array.at(-1)->Option.map(n => n.id)
 }
@@ -100,7 +98,6 @@ let make = (~username: string, ~host: option<string>=?) => {
     None
   }, (username, host))
 
-  // Load more notes
   let loadMore = async () => {
     switch state {
     | Loaded({profile, notes, lastNoteId: Some(lastId), hasMore: true, isLoadingMore: false} as data) => {
@@ -158,7 +155,6 @@ let make = (~username: string, ~host: option<string>=?) => {
     }
   }, [state])
 
-  // Format large numbers
   let formatCount = (n: int): string => {
     if n >= 1000000 {
       Float.toFixed(Int.toFloat(n) /. 1000000.0, ~digits=1) ++ "M"

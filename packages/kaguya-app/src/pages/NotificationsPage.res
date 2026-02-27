@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// NotificationsPage.res - Notifications page
 
 @jsx.component
 let make = () => {

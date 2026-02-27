@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-// SetTimeout.res - setTimeout bindings
 
-// ============================================================
 // setTimeout / clearTimeout
-// ============================================================
 
 type timeoutId
 

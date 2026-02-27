@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// URLSearchParams.res - URLSearchParams bindings
 
 type t
 

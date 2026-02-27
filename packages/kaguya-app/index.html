@@ -5,10 +5,24 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="かぐや - やさしくて、しんぷるな Misskey クライアント" />
+    <meta name="theme-color" content="#b5a990" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="かぐや" />
     <title>かぐや</title>
-    
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="/icons/icon-192.png" type="image/png" />
+
+    <!-- Apple touch icon (iOS PWA) -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
     <!-- IndieAuth / Misskey OAuth2: redirect_uri for authorization callback -->
     <link rel="redirect_uri" href="/oauth-callback" />
     

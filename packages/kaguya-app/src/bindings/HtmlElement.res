@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
-// HtmlElement.res - HTML Element manipulation bindings
 
-// ============================================================
 // Element Style Manipulation - works with any JS object
-// ============================================================
 
 @get @scope("style")
 external getBackground: 'a => string = "background"
@@ -41,5 +38,15 @@ external getOpacity: 'a => string = "opacity"
 @set @scope("style")
 external setOpacity: ('a, string) => unit = "opacity"
 
-// Helper to get computed color (same as getColor)
 let getComputedColor = getColor
+
+@send
+external scrollIntoView: (Dom.element, {..}) => unit = "scrollIntoView"
+
+let scrollIntoViewSmooth = (element: Dom.element): unit => {
+  scrollIntoView(element, {"behavior": "smooth", "block": "start"})
+}
+
+let scrollIntoViewInstant = (element: Dom.element): unit => {
+  scrollIntoView(element, {"behavior": "instant", "block": "start"})
+}

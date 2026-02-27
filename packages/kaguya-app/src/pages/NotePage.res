@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// NotePage.res - Note detail page with conversation context
 
 type notePageState =
   | Loading
@@ -53,6 +52,21 @@ let make = (~noteId: string, ~host: string) => {
   let (state, setState) = PreactHooks.useState(() => Loading)
   let localHost = PreactSignals.value(AppState.instanceName)
   let (_, navigate) = Wouter.useLocation()
+
+  // Ref to scroll main note into view after loading
+  let mainNoteRef = PreactHooks.useRef(Nullable.null)
+
+  // Scroll main note into view whenever state transitions to Loaded
+  PreactHooks.useEffect1(() => {
+    switch state {
+    | Loaded(_) =>
+      mainNoteRef.current
+      ->Nullable.toOption
+      ->Option.forEach(HtmlElement.scrollIntoViewInstant)
+    | _ => ()
+    }
+    None
+  }, [state])
 
   PreactHooks.useEffect2(() => {
     setState(_ => Loading)
@@ -147,7 +161,7 @@ let make = (~noteId: string, ~host: string) => {
         }}
 
         // Main note (highlighted)
-        <div className="note-page-main">
+        <div className="note-page-main" ref={mainNoteRef->Obj.magic}>
           <Note.NoteView note />
         </div>
 

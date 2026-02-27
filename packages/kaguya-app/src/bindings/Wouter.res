@@ -1,9 +1,4 @@
 // SPDX-License-Identifier: MPL-2.0
-// Wouter.res - wouter-preact router bindings
-
-// ============================================================
-// Types
-// ============================================================
 
 type params = Dict.t<string>
 
@@ -11,20 +6,15 @@ type navigationOptions = {
   replace: bool,
 }
 
-// ============================================================
 // Hooks
-// ============================================================
 
-// Get current location and navigate function with options support
 @module("wouter-preact")
 external useLocationWithOptions: unit => (string, (string, navigationOptions) => unit) =
   "useLocation"
 
-// Get current location (basic version)
 @module("wouter-preact")
 external useLocation: unit => (string, string => unit) = "useLocation"
 
-// Get search string (query params)
 @module("wouter-preact")
 external useSearch: unit => string = "useSearch"
 
@@ -32,13 +22,8 @@ external useSearch: unit => string = "useSearch"
 @module("wouter-preact")
 external useRoute: string => (bool, Nullable.t<params>) = "useRoute"
 
-// Get route params for current route
 @module("wouter-preact")
 external useParams: unit => params = "useParams"
-
-// ============================================================
-// Components
-// ============================================================
 
 module Route = {
   @module("wouter-preact") @react.component
@@ -65,9 +50,7 @@ module Redirect = {
   external make: (~to: string) => Preact.element = "Redirect"
 }
 
-// ============================================================
 // Navigation Helpers
-// ============================================================
 
 // Programmatic navigation helper (must be called inside a component)
 let useNavigate = (): (string => unit) => {
