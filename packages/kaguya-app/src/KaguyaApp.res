@@ -64,9 +64,6 @@ let make = () => {
       <Wouter.Route path="/add-account">
         <LoginPage />
       </Wouter.Route>
-      <Wouter.Route path="/settings/push-manual">
-        <PushManualRegistrationPage />
-      </Wouter.Route>
       <Wouter.Route path="/settings">
         <SettingsPage />
       </Wouter.Route>

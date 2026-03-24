@@ -5,69 +5,91 @@ let make = () => {
   let pushState = PreactSignals.value(PushNotificationStore.state)
   let clientOpt = PreactSignals.value(AppState.client)
   let activeId = PreactSignals.value(AppState.activeAccountId)
-  let currentUser = PreactSignals.value(AppState.currentUser)
 
-  let userId =
-    currentUser
-    ->Option.flatMap(JSON.Decode.object)
-    ->Option.flatMap(obj => obj->Dict.get("id"))
-    ->Option.flatMap(JSON.Decode.string)
-    ->Option.getOr("")
-
-  let handleToggle = (_: JsxEvent.Mouse.t) => {
+  let handleEnable = (_: JsxEvent.Mouse.t) => {
     switch (clientOpt, activeId) {
-    | (Some(c), Some(id)) =>
-      switch pushState {
-      | PushNotificationStore.Subscribed => {
-          let _ = PushNotificationStore.unsubscribe(c, id)
-        }
-      | PushNotificationStore.Unsubscribed
-      | PushNotificationStore.Error(_) => {
-          let _ = PushNotificationStore.subscribe(c, id)
-        }
-      | _ => ()
+    | (Some(c), Some(id)) => {
+        let _ = PushNotificationStore.generateScript(c, id)
       }
     | _ => ()
     }
   }
 
-  let handleCopyId = (_: JsxEvent.Mouse.t) => {
-    if userId != "" {
-      let _ = %raw(`navigator.clipboard.writeText(userId)`)
+  let handleDisable = (_: JsxEvent.Mouse.t) => {
+    switch (clientOpt, activeId) {
+    | (Some(c), Some(id)) => {
+        let _ = PushNotificationStore.unsubscribe(c, id)
+      }
+    | _ => ()
     }
   }
 
-  let (label, icon, disabled) = switch pushState {
-  | NotSupported => ("プッシュ通知未対応", "🚫", true)
-  | PermissionDenied => ("通知が拒否されています", "🚫", true)
-  | Unsubscribed => ("プッシュ通知を有効にする", "🔕", false)
-  | Subscribing => ("登録中...", "⏳", true)
-  | Subscribed => ("プッシュ通知を無効にする", "🔔", false)
-  | Error(_) => ("プッシュ通知を有効にする", "⚠️", false)
+  let handleConfirm = (_: JsxEvent.Mouse.t) => {
+    activeId->Option.forEach(id => PushNotificationStore.confirmSubscribed(id))
   }
 
-  <div className="push-notification-container" style={Style.make(~display="flex", ~flexDirection="column", ~gap="8px", ())}>
-    <button
-      className="push-notification-toggle"
-      onClick={handleToggle}
-      disabled
-      title={label}
-      type_="button"
-    >
-      {Preact.string(icon ++ " " ++ label)}
+  let handleCopy = (script: string) => (_: JsxEvent.Mouse.t) => {
+    let _ = %raw(`navigator.clipboard.writeText(script)`)
+  }
+
+  let openScratchpad = (_: JsxEvent.Mouse.t) => {
+    let origin = clientOpt->Option.map(Misskey.origin)->Option.getOr("")
+    if origin != "" {
+      let _ = %raw(`window.open(origin + '/scratchpad', '_blank')`)
+    }
+  }
+
+  switch pushState {
+  | NotSupported =>
+    <button className="push-notification-toggle" disabled={true} type_="button">
+      {Preact.string("🚫 プッシュ通知未対応")}
     </button>
-    {if userId != "" {
-      <div style={Style.make(~fontSize="12px", ~opacity="0.7", ~display="flex", ~alignItems="center", ~gap="8px", ())}>
-        <span>{Preact.string("Your ID: " ++ userId)}</span>
-        <button 
-          onClick={handleCopyId}
-          style={Style.make(~background="none", ~border="1px solid currentColor", ~borderRadius="4px", ~padding="2px 6px", ~cursor="pointer", ~fontSize="10px", ())}
-        >
-          {Preact.string("Copy")}
+
+  | PermissionDenied =>
+    <button className="push-notification-toggle" disabled={true} type_="button">
+      {Preact.string("🚫 通知が拒否されています")}
+    </button>
+
+  | Unsubscribed | Error(_) =>
+    <button className="push-notification-toggle" onClick={handleEnable} type_="button">
+      {Preact.string(pushState == Unsubscribed ? "🔕 プッシュ通知を有効にする" : "⚠️ プッシュ通知を有効にする")}
+    </button>
+
+  | GeneratingScript =>
+    <button className="push-notification-toggle" disabled={true} type_="button">
+      {Preact.string("⏳ スクリプト生成中...")}
+    </button>
+
+  | Subscribed =>
+    <button className="push-notification-toggle" onClick={handleDisable} type_="button">
+      {Preact.string("🔔 プッシュ通知を無効にする")}
+    </button>
+
+  | AwaitingScript(script) =>
+    <div className="push-script-container" style={Style.make(~display="flex", ~flexDirection="column", ~gap="8px", ())}>
+      <p style={Style.make(~margin="0", ~fontSize="13px", ())}>
+        {Preact.string("以下のAiScriptをMisskeyのスクラッチパッドで実行してください：")}
+      </p>
+      <textarea
+        readOnly={true}
+        value={script}
+        rows={6}
+        style={Style.make(~fontFamily="monospace", ~fontSize="11px", ~resize="vertical", ())}
+      />
+      <div style={Style.make(~display="flex", ~gap="8px", ~flexWrap="wrap", ())}>
+        <button onClick={handleCopy(script)} type_="button">
+          {Preact.string("📋 コピー")}
+        </button>
+        <button onClick={openScratchpad} type_="button">
+          {Preact.string("🔗 スクラッチパッドを開く")}
+        </button>
+        <button className="button-primary" onClick={handleConfirm} type_="button">
+          {Preact.string("✓ 実行しました")}
+        </button>
+        <button onClick={handleDisable} type_="button">
+          {Preact.string("キャンセル")}
         </button>
       </div>
-    } else {
-      Preact.null
-    }}
-  </div>
+    </div>
+  }
 }

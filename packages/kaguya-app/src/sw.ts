@@ -93,23 +93,19 @@ self.addEventListener("push", (event) => {
       return;
     }
 
-    // If it's a ping from the server (for checking 410 Gone), ignore it.
-    if (data && data.data && data.data.type === "ping") {
-      console.log("[sw] Received ping");
-      return;
-    }
-
     try {
-      // Push-server sends: { title, body, tag, silent, renotify, data }
+      // Native Misskey push payload: { title, body, icon, tag, url }
+      // Legacy push-server payload: { title, body, tag, silent, renotify, data }
       const title = data.title || "かぐや";
-      const options = {
+      const notifUrl = data.url || data?.data?.url || "/";
+      const options: NotificationOptions = {
         body: data.body || "",
         tag: data.tag || `kaguya-${Date.now()}`,
+        icon: data.icon || "/icons/icon-192.png",
+        badge: "/icons/icon-192.png",
         silent: data.silent !== false,
         renotify: data.renotify === true,
-        icon: "/icons/icon-192.png",
-        badge: "/icons/icon-192.png",
-        data: data.data || {},
+        data: { url: notifUrl },
       };
 
       await self.registration.showNotification(title, options);

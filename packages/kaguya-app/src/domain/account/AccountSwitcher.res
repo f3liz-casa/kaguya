@@ -193,15 +193,7 @@ let make = () => {
         <div className="account-switcher-item">
           <PushNotificationToggle />
         </div>
-        {if isReadOnly {
-          <div className="account-switcher-item" style={Style.make(~fontSize="12px", ~opacity="0.8", ())}>
-            <Wouter.Link href="/settings/push-manual" onClick={_ => setIsOpen(_ => false)}>
-              {Preact.string("⚙️ プッシュ通知の手動設定")}
-            </Wouter.Link>
-          </div>
-        } else {
-          Preact.null
-        }}
+        {Preact.null}
 
         // Logout
         <div className="account-switcher-divider" />

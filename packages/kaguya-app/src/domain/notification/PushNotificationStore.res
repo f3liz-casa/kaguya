@@ -1,36 +1,32 @@
 // SPDX-License-Identifier: MPL-2.0
 //
-// Uses an external push-server (push-server.f3liz.casa) that receives
-// Misskey webhooks and delivers Web Push notifications.
+// Native Misskey push notifications via AiScript + sw/register.
+//
+// Because Misskey blocks sw/register from third-party OAuth tokens,
+// we generate an AiScript that the user runs in Misskey's Scratchpad.
+// The script subscribes the browser and calls sw/register on the user's
+// behalf using their full Misskey session.
 //
 // Flow:
-//   1. Browser subscribes to push via PushManager (push-server's VAPID key)
-//   2. Client creates a Misskey webhook (i/webhooks/create) — token stays in browser
-//   3. Client registers with push-server (/register) — no token sent
-//   4. Misskey sends webhooks → push-server → browser push
-
-// Configuration
-
-let pushServerUrl = "https://push-server.f3liz.casa"
-let pushServerVapidKey = "BL93HHKUfvDXsannCPVrQ0ckABtvNTvYZl4W6-Zvxx0LW_MupHtronpz65HHHJVxnGHoswAV3JSNlkHSUCOcbPI" // Set after VAPID key generation on server
+//   1. Fetch instance VAPID key from /api/meta (swPublickey)
+//   2. Subscribe browser to push using that VAPID key
+//   3. Generate AiScript containing the endpoint/keys
+//   4. User copies AiScript → runs in Misskey Scratchpad → sw/register called
+//   5. User confirms → state becomes Subscribed
 
 type pushState =
   | NotSupported
   | PermissionDenied
   | Unsubscribed
-  | Subscribing
+  | GeneratingScript
+  | AwaitingScript(string) // holds the generated AiScript
   | Subscribed
   | Error(string)
 
-// Signals
-
 let state: PreactSignals.signal<pushState> = PreactSignals.make(NotSupported)
 
-// localStorage keys
-let storageKeyPrefix = "kaguya:pushEnabled:"
-let webhookIdPrefix = "kaguya:webhookId:"
-let serverUserIdPrefix = "kaguya:serverUserId:"
-let webhookSecretPrefix = "kaguya:webhookSecret:"
+let storageKeyPrefix = "kaguya:nativePushEnabled:"
+let endpointPrefix = "kaguya:nativePushEndpoint:"
 
 @val @scope("localStorage")
 external getItem: string => Nullable.t<string> = "getItem"
@@ -41,20 +37,8 @@ external setItem: (string, string) => unit = "setItem"
 @val @scope("localStorage")
 external removeItem: string => unit = "removeItem"
 
-// crypto.randomUUID()
-@val @scope("crypto")
-external randomUUID: unit => string = "randomUUID"
-
-// fetch for push-server API (not Misskey)
-@val external fetch: (string, {..}) => promise<{..}> = "fetch"
-
-// Core Logic
-
-/// Initialize push state — call on app start or login.
 let init = (): unit => {
   if !ServiceWorkerAPI.isSupported() || !ServiceWorkerAPI.isNotificationSupported() {
-    PreactSignals.setValue(state, NotSupported)
-  } else if pushServerVapidKey == "" {
     PreactSignals.setValue(state, NotSupported)
   } else {
     switch ServiceWorkerAPI.permission {
@@ -64,129 +48,104 @@ let init = (): unit => {
   }
 }
 
-/// Subscribe to push notifications via push-server.
-/// 1. Request notification permission
-/// 2. Register service worker + subscribe to push (push-server's VAPID key)
-/// 3. Create Misskey webhook (check if already exists)
-/// 4. Register with push-server (webhook secret + push subscription, no token)
-let subscribe = async (client: Misskey.t, accountId: string): result<unit, string> => {
+// Build the AiScript that calls sw/register on the Misskey instance
+let buildAiScript = (
+  ~expectedUsername: string,
+  ~misskeyOrigin: string,
+  ~endpoint: string,
+  ~auth: string,
+  ~p256dh: string,
+): string => {
+  `/// @ 0.18.0
+// Generated for @${expectedUsername} on ${misskeyOrigin}
+
+if ((USER_USERNAME != '${expectedUsername}') || ((SERVER_URL != '${misskeyOrigin}/') && (SERVER_URL != '${misskeyOrigin}'))) {
+  Mk:dialog('Validation Failed', 'Account/Host mismatch.', 'error')
+  Core:abort()
+}
+
+let response = Mk:api('sw/register', {
+  endpoint: '${endpoint}',
+  auth: '${auth}',
+  publickey: '${p256dh}',
+})
+
+if (Core:type(response) == 'error') {
+  Mk:dialog('Registration Failed', Core:to_str(response.info), 'error')
+} else {
+  Mk:dialog('Success!', 'Push notifications enabled. You can close this window.', 'success')
+}`
+}
+
+let generateScript = async (client: Misskey.t, accountId: string): result<unit, string> => {
   if !ServiceWorkerAPI.isSupported() || !ServiceWorkerAPI.isNotificationSupported() {
     Error("Push notifications not supported in this browser")
-  } else if pushServerVapidKey == "" {
-    Error("Push server VAPID key not configured")
   } else {
-    PreactSignals.setValue(state, Subscribing)
+    PreactSignals.setValue(state, GeneratingScript)
     try {
-      // 1. Request notification permission
-      let perm = await ServiceWorkerAPI.requestPermission()
-      if perm == #denied {
-        PreactSignals.setValue(state, PermissionDenied)
-        Error("Notification permission denied")
-      } else {
-        // 2. Register service worker and subscribe to push
-        let registration = await ServiceWorkerAPI.register("/sw.js")
-        let pm = ServiceWorkerAPI.pushManager(registration)
-        
-        let existingSub = await ServiceWorkerAPI.getSubscription(pm)
-        let subscription = switch existingSub->Nullable.toOption {
-        | Some(sub) => sub
-        | None => {
-            let opts = ServiceWorkerAPI.makeSubscribeOptions(pushServerVapidKey)
-            await ServiceWorkerAPI.subscribe(pm, opts)
-          }
+      // 1. Fetch instance VAPID key
+      let metaResult = await Misskey.Meta.get(client)
+      switch metaResult {
+      | Error(e) => {
+          PreactSignals.setValue(state, Error(e))
+          Error("Failed to fetch instance meta: " ++ e)
         }
-        let subJSON = ServiceWorkerAPI.toJSON(subscription)
-
-        // 3. Create or find webhook on Misskey (token stays in browser)
-        let webhookSecret = randomUUID()
-        let origin = Misskey.origin(client)
-
-        let userResult = await Misskey.currentUser(client)
-        switch userResult {
-        | Error(e) => {
-            PreactSignals.setValue(state, Error(e))
-            Error("Failed to get current user: " ++ e)
+      | Ok(meta) =>
+        switch meta.swPublickey {
+        | None => {
+            PreactSignals.setValue(state, NotSupported)
+            Error("Push notifications not enabled on this instance")
           }
-        | Ok(userJson) => {
-            let userId = switch userJson->JSON.Decode.object {
-            | Some(obj) => obj->Dict.get("id")->Option.flatMap(JSON.Decode.string)->Option.getOr("")
-            | None => ""
-            }
-
-            if userId == "" {
-              PreactSignals.setValue(state, Error("No user ID"))
-              Error("Could not determine user ID")
+        | Some(vapidKey) => {
+            // 2. Request notification permission
+            let perm = await ServiceWorkerAPI.requestPermission()
+            if perm == #denied {
+              PreactSignals.setValue(state, PermissionDenied)
+              Error("Notification permission denied")
             } else {
-              let regBody = {
-                "misskey_origin": origin,
-                "webhook_user_id": userId,
-                "webhook_secret": webhookSecret,
-                "push_subscription": subJSON->Obj.magic,
-                "notification_preference": "quiet",
-                "delay_minutes": 1,
+              // 3. Subscribe browser to push using instance VAPID key
+              let registration = await ServiceWorkerAPI.register("/sw.js")
+              let pm = ServiceWorkerAPI.pushManager(registration)
+
+              let existingSub = await ServiceWorkerAPI.getSubscription(pm)
+              let subscription = switch existingSub->Nullable.toOption {
+              | Some(sub) => sub
+              | None => {
+                  let opts = ServiceWorkerAPI.makeSubscribeOptions(vapidKey)
+                  await ServiceWorkerAPI.subscribe(pm, opts)
+                }
               }
 
-              let regResponse = await fetch(
-                pushServerUrl ++ "/register",
-                {
-                  "method": "POST",
-                  "headers": {"Content-Type": "application/json"},
-                  "body": JSON.stringifyAny(regBody)->Option.getOr("{}"),
-                },
+              let endpoint = ServiceWorkerAPI.endpoint(subscription)
+              let p256dh = ServiceWorkerAPI.encodeKeyBase64Url(subscription->ServiceWorkerAPI.getKey("p256dh"))
+              let auth = ServiceWorkerAPI.encodeKeyBase64Url(subscription->ServiceWorkerAPI.getKey("auth"))
+
+              // 4. Get username for AiScript validation
+              let userResult = await Misskey.currentUser(client)
+              let username = switch userResult {
+              | Ok(userJson) =>
+                userJson
+                ->JSON.Decode.object
+                ->Option.flatMap(obj => obj->Dict.get("username"))
+                ->Option.flatMap(JSON.Decode.string)
+                ->Option.getOr("unknown")
+              | Error(_) => "unknown"
+              }
+
+              let misskeyOrigin = Misskey.origin(client)
+              let script = buildAiScript(
+                ~expectedUsername=username,
+                ~misskeyOrigin,
+                ~endpoint,
+                ~auth,
+                ~p256dh,
               )
 
-              if (regResponse["ok"]: bool) {
-                let json = await %raw(`regResponse.json()`)
-                let serverId = (json["id"]: string)
+              // Store endpoint so we can unsubscribe later
+              setItem(endpointPrefix ++ accountId, endpoint)
 
-                // 4. Create webhook on Misskey (token stays in browser)
-                let webhookResult = await Misskey.Webhooks.create(
-                  client,
-                  ~name="kaguya push",
-                  ~url=pushServerUrl ++ "/webhook/" ++ serverId,
-                  ~secret=webhookSecret,
-                  ~on=[
-                    "mention",
-                    "reply",
-                    "renote",
-                    "reaction",
-                    "follow",
-                    "receiveFollowRequest",
-                    "pollEnded",
-                  ],
-                  (),
-                )
-
-                switch webhookResult {
-                | Error(e) => {
-                    // Try to clean up the push-server registration if possible
-                    let _ = fetch(
-                      pushServerUrl ++ "/unregister",
-                      {
-                        "method": "DELETE",
-                        "headers": {
-                          "Content-Type": "application/json",
-                          "X-Misskey-Hook-Secret": webhookSecret,
-                        },
-                        "body": JSON.stringifyAny({"id": serverId})->Option.getOr("{}"),
-                      },
-                    )
-                    PreactSignals.setValue(state, Error(e))
-                    Error("Failed to create Misskey webhook: " ++ e)
-                  }
-                | Ok(webhook) => {
-                    setItem(storageKeyPrefix ++ accountId, "true")
-                    setItem(webhookIdPrefix ++ accountId, webhook.id)
-                    setItem(serverUserIdPrefix ++ accountId, serverId)
-                    setItem(webhookSecretPrefix ++ accountId, webhookSecret)
-                    PreactSignals.setValue(state, Subscribed)
-                    Ok()
-                  }
-                }
-              } else {
-                PreactSignals.setValue(state, Error("Push server registration failed"))
-                Error("Push server returned error")
-              }
+              PreactSignals.setValue(state, AwaitingScript(script))
+              Ok()
             }
           }
         }
@@ -198,46 +157,23 @@ let subscribe = async (client: Misskey.t, accountId: string): result<unit, strin
         | None => "Unknown error"
         }
         PreactSignals.setValue(state, Error(msg))
-        Error("Push subscription failed: " ++ msg)
+        Error("Script generation failed: " ++ msg)
       }
     }
   }
 }
 
-/// Unsubscribe from push notifications.
-let unsubscribe = async (client: Misskey.t, accountId: string): result<unit, string> => {
+// Called after user confirms they ran the AiScript successfully
+let confirmSubscribed = (accountId: string): unit => {
+  setItem(storageKeyPrefix ++ accountId, "true")
+  PreactSignals.setValue(state, Subscribed)
+}
+
+let unsubscribe = async (_client: Misskey.t, accountId: string): result<unit, string> => {
+  // We can't call sw/unregister either (same token restriction),
+  // so just unsubscribe the browser push and clear local state.
+  // The Misskey instance will eventually clean up the dead endpoint.
   try {
-    // 1. Delete Misskey webhook
-    let webhookId = getItem(webhookIdPrefix ++ accountId)->Nullable.toOption
-    switch webhookId {
-    | Some(id) => {
-        let _ = await Misskey.Webhooks.delete(client, ~webhookId=id)
-      }
-    | None => ()
-    }
-
-    // 2. Unregister from push-server
-    let serverId = getItem(serverUserIdPrefix ++ accountId)->Nullable.toOption
-    let webhookSecret = getItem(webhookSecretPrefix ++ accountId)->Nullable.toOption
-
-    switch (serverId, webhookSecret) {
-    | (Some(id), Some(secret)) => {
-        let _ = await fetch(
-          pushServerUrl ++ "/unregister",
-          {
-            "method": "DELETE",
-            "headers": {
-              "Content-Type": "application/json",
-              "X-Misskey-Hook-Secret": secret,
-            },
-            "body": JSON.stringifyAny({"id": id})->Option.getOr("{}"),
-          },
-        )
-      }
-    | _ => ()
-    }
-
-    // 3. Unsubscribe browser push
     if ServiceWorkerAPI.isSupported() {
       let registration = await ServiceWorkerAPI.register("/sw.js")
       let pm = ServiceWorkerAPI.pushManager(registration)
@@ -249,12 +185,8 @@ let unsubscribe = async (client: Misskey.t, accountId: string): result<unit, str
       | None => ()
       }
     }
-
-    // 4. Clear local state
     removeItem(storageKeyPrefix ++ accountId)
-    removeItem(webhookIdPrefix ++ accountId)
-    removeItem(serverUserIdPrefix ++ accountId)
-    removeItem(webhookSecretPrefix ++ accountId)
+    removeItem(endpointPrefix ++ accountId)
     PreactSignals.setValue(state, Unsubscribed)
     Ok()
   } catch {
@@ -268,7 +200,6 @@ let unsubscribe = async (client: Misskey.t, accountId: string): result<unit, str
   }
 }
 
-/// Check if push is enabled for the given account.
 let isEnabledForAccount = (accountId: string): bool => {
   switch getItem(storageKeyPrefix ++ accountId)->Nullable.toOption {
   | Some("true") => true
@@ -276,9 +207,6 @@ let isEnabledForAccount = (accountId: string): bool => {
   }
 }
 
-/// Restore push state on login — checks existing subscription.
-/// If push is enabled but no subscription is found, it attempts to re-register
-/// if browser permissions are already granted.
 let restore = async (client: Misskey.t, accountId: string): unit => {
   init()
   if isEnabledForAccount(accountId) && ServiceWorkerAPI.isSupported() {
@@ -286,16 +214,13 @@ let restore = async (client: Misskey.t, accountId: string): unit => {
       let registration = await ServiceWorkerAPI.register("/sw.js")
       let pm = ServiceWorkerAPI.pushManager(registration)
       let existingSub = await ServiceWorkerAPI.getSubscription(pm)
-      let webhookId = getItem(webhookIdPrefix ++ accountId)->Nullable.toOption
-
-      switch (existingSub->Nullable.toOption, webhookId) {
-      | (Some(_), Some(_)) => PreactSignals.setValue(state, Subscribed)
-      | (Some(_), None)
-      | (None, _) =>
-        // If enabled in storage but mismatch/missing sub/webhook, try auto-repair
-        // ONLY if permission is already granted (to avoid unexpected popups)
+      switch existingSub->Nullable.toOption {
+      | Some(_) => PreactSignals.setValue(state, Subscribed)
+      | None =>
+        // Subscription expired — need to re-run the AiScript flow
+        removeItem(storageKeyPrefix ++ accountId)
         if ServiceWorkerAPI.permission == #granted {
-          let _ = await subscribe(client, accountId)
+          let _ = await generateScript(client, accountId)
         } else {
           PreactSignals.setValue(state, Unsubscribed)
         }

@@ -64,17 +64,19 @@ let isSupported = (): bool => {
 
 @send external unsubscribe: pushSubscription => promise<bool> = "unsubscribe"
 
-// getKey returns raw ArrayBuffer — needed for Misskey's expected encoding
+// getKey returns raw ArrayBuffer
 @send @return(nullable)
 external getKey: (pushSubscription, string) => option<Js.TypedArray2.ArrayBuffer.t> = "getKey"
 
-// Encode ArrayBuffer to standard base64 (what Misskey expects)
+// Encode ArrayBuffer to base64url without padding (required by Misskey sw/register)
 @warning("-27")
-let encodeKey = (buffer: option<Js.TypedArray2.ArrayBuffer.t>): string => {
+let encodeKeyBase64Url = (buffer: option<Js.TypedArray2.ArrayBuffer.t>): string => {
   %raw(`
     (function() {
       if (!buffer) return '';
-      return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)));
+      var bytes = new Uint8Array(buffer);
+      var b64 = btoa(String.fromCharCode.apply(null, bytes));
+      return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     })()
   `)
 }
