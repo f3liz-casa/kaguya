@@ -51,6 +51,11 @@ let login = async (~origin: string, ~token: string): result<unit, AuthTypes.logi
           ->Option.flatMap(JSON.Decode.string)
           ->Option.getOr("")
         let userHost = UrlUtils.hostnameFromOrigin(normalizedOrigin)
+        let misskeyUserId =
+          userObj
+          ->Option.flatMap(o => o->Dict.get("id"))
+          ->Option.flatMap(JSON.Decode.string)
+          ->Option.getOr("")
 
         let accountId = Account.makeId(~origin=normalizedOrigin, ~username=userUsername)
         let account: Account.t = {
@@ -64,6 +69,7 @@ let login = async (~origin: string, ~token: string): result<unit, AuthTypes.logi
           | Some(ReadOnly) => AuthTypes.ReadOnly
           | _ => AuthTypes.Standard
           },
+          misskeyUserId,
         }
 
         AccountManager.upsertAccount(account)

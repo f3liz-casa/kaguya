@@ -41,12 +41,21 @@ let makeSubscribeOptions = (vapidKey: string): subscribeOptions => {
 @val @scope(("navigator", "serviceWorker"))
 external register: string => promise<serviceWorkerRegistration> = "register"
 
+@val @scope(("navigator", "serviceWorker"))
+external ready: promise<serviceWorkerRegistration> = "ready"
+
 @val @scope("navigator")
 external serviceWorker: Nullable.t<{..}> = "serviceWorker"
 
 let isSupported = (): bool => {
   Nullable.isNullable(serviceWorker) == false
 }
+
+// Returns true if a SW is currently controlling this page
+@val @scope(("navigator", "serviceWorker"))
+external controller: Nullable.t<{..}> = "controller"
+
+let isControlled = (): bool => Nullable.isNullable(controller) == false
 
 // Push Manager
 

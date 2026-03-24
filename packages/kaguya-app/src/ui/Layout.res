@@ -50,7 +50,6 @@ let make = (~children: Preact.element) => {
     location == "/notifications" ||
     location == "/settings" ||
     location == "/performance" ||
-    location == "/add-account" ||
     location == "/miauth-callback" ||
     location->String.startsWith("/oauth-callback")
 

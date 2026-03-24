@@ -17,6 +17,11 @@ type hookResult = {
   handlePermissionModeChange: JsxEvent.Form.t => unit,
   handleSubmit: JsxEvent.Form.t => unit,
   setLoginMethod: loginMethod => unit,
+  validAccounts: array<Account.t>,
+  invalidAccounts: array<Account.t>,
+  isValidating: bool,
+  handleSwitchAccount: string => unit,
+  handleRevokeAccount: string => unit,
 }
 
 let useLoginForm = (): hookResult => {
@@ -25,7 +30,41 @@ let useLoginForm = (): hookResult => {
   let (isSubmitting, setIsSubmitting) = PreactHooks.useState(() => false)
   let (loginMethod, setLoginMethod) = PreactHooks.useState(() => #oauth2)
   let (permissionMode, setPermissionMode) = PreactHooks.useState(() => AuthTypes.Standard)
+  let (invalidAccounts, setInvalidAccounts) = PreactHooks.useState(() => [])
+  let (validAccounts, setValidAccounts) = PreactHooks.useState(() => [])
+  let (isValidating, setIsValidating) = PreactHooks.useState(() =>
+    Array.length(PreactSignals.value(AppState.accounts)) > 0
+  )
   let authState = PreactSignals.value(AppState.authState)
+  let storedAccounts = PreactSignals.value(AppState.accounts)
+
+  PreactHooks.useEffect1(() => {
+    let _ = (async () => {
+      let results = await Promise.all(
+        storedAccounts->Array.map(async account => {
+          let c = Misskey.connect(account.origin, ~token=account.token)
+          let result = await c->Misskey.currentUser
+          (account, result)
+        }),
+      )
+      let invalid = results->Array.filterMap(((account, result)) =>
+        switch result {
+        | Error(_) => Some(account)
+        | Ok(_) => None
+        }
+      )
+      setInvalidAccounts(_ => invalid)
+      let valid = results->Array.filterMap(((account, result)) =>
+        switch result {
+        | Ok(_) => Some(account)
+        | Error(_) => None
+        }
+      )
+      setValidAccounts(_ => valid)
+      setIsValidating(_ => false)
+    })()
+    None
+  }, [storedAccounts])
 
   let handleInstanceChange = (e: JsxEvent.Form.t) => {
     let value = JsxEvent.Form.target(e)["value"]
@@ -97,6 +136,18 @@ let useLoginForm = (): hookResult => {
   | #oauth2 => "OAuth2 で安全に認証します。インスタンスが OAuth2 に対応していない場合は MiAuth をお試しください。"
   }
 
+
+  let handleSwitchAccount = (accountId: string) => {
+    let _ = AuthManager.switchAccount(accountId)
+  }
+
+  let handleRevokeAccount = (accountId: string) => {
+    AccountManager.removeAccount(accountId)
+    if Array.length(PreactSignals.value(AppState.accounts)) == 0 {
+      PreactSignals.setValue(AppState.authState, AuthTypes.LoggedOut)
+    }
+  }
+
   {
     instanceUrl,
     token,
@@ -112,5 +163,10 @@ let useLoginForm = (): hookResult => {
     handlePermissionModeChange,
     handleSubmit,
     setLoginMethod: nextMethod => setLoginMethod(_ => nextMethod),
+    validAccounts,
+    invalidAccounts,
+    isValidating,
+    handleSwitchAccount,
+    handleRevokeAccount,
   }
 }

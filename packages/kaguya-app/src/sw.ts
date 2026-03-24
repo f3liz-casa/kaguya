@@ -16,7 +16,13 @@ import {
   StaleWhileRevalidate,
 } from "serwist";
 
-declare const self: ServiceWorkerGlobalScope & SerwistGlobalConfig;
+declare global {
+  interface WorkerGlobalScope extends SerwistGlobalConfig {
+    __SW_MANIFEST: (PrecacheEntry | string)[] | undefined;
+  }
+}
+
+declare const self: ServiceWorkerGlobalScope;
 
 const SW_VERSION = "2.0.0";
 
@@ -26,7 +32,7 @@ const SW_VERSION = "2.0.0";
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
-  skipWaiting: true,
+  skipWaiting: false,
   clientsClaim: true,
   navigationPreload: false,
   runtimeCaching: [
@@ -79,42 +85,86 @@ serwist.addEventListeners();
 // Push Event Handler
 // ============================================================
 
-self.addEventListener("push", (event) => {
-  if (!event.data) {
-    return;
-  }
+// Misskey sw/register push payload types (from misskey/packages/sw/src/types.ts)
+type PushNotificationData =
+  | { type: "notification"; body: { type: string; user?: { name?: string | null; username: string; avatarUrl?: string | null }; note?: { id: string; text?: string | null }; [k: string]: unknown }; userId: string; dateTime: number }
+  | { type: "unreadAntennaNote"; body: { antenna: { id: string; name: string }; note: { text?: string | null; user: { name?: string | null; username: string; avatarUrl?: string | null } } }; userId: string; dateTime: number }
+  | { type: "newChatMessage"; body: { fromUser: { name?: string | null; username: string; avatarUrl?: string | null }; text: string; toRoom?: { name: string } | null; toRoomId?: string | null; fromUserId: string }; userId: string; dateTime: number }
+  | { type: "readAllNotifications"; userId: string; dateTime: number };
 
-  const notificationPromise = (async () => {
-    let data;
+function getUserName(user: { name?: string | null; username: string }): string {
+  return user.name || user.username;
+}
+
+function composeNotification(data: PushNotificationData): [string, NotificationOptions] | null {
+  switch (data.type) {
+    case "notification": {
+      const b = data.body;
+      const user = b.user;
+      const note = b.note;
+      const icon = user?.avatarUrl ?? "/icons/icon-192.png";
+      const notifData = { url: note ? `/push/notes/${note.id}?userId=${data.userId}` : "/", userId: data.userId, type: data.type, body: b };
+      switch (b.type) {
+        case "mention":
+        case "reply":
+        case "quote":
+          return [`${getUserName(user!)} からの${b.type === "mention" ? "メンション" : b.type === "reply" ? "返信" : "引用"}`, { body: note?.text ?? "", icon, data: notifData }];
+        case "renote":
+          return [`${getUserName(user!)} がリノート`, { body: note?.text ?? "", icon, data: notifData }];
+        case "reaction":
+          return [`${b.reaction ?? "👍"} ${getUserName(user!)}`, { body: note?.text ?? "", icon, data: notifData }];
+        case "follow":
+          return [`${getUserName(user!)} にフォローされました`, { icon, data: notifData }];
+        case "receiveFollowRequest":
+          return [`${getUserName(user!)} からフォローリクエスト`, { icon, data: notifData }];
+        case "followRequestAccepted":
+          return [`${getUserName(user!)} がフォローリクエストを承認`, { icon, data: notifData }];
+        case "app":
+          return [(b.header as string) ?? (b.body as string) ?? "通知", { body: b.header ? (b.body as string) : "", icon: (b.icon as string) ?? icon, data: notifData }];
+        default:
+          return ["通知", { body: note?.text ?? "", icon, data: notifData }];
+      }
+    }
+    case "unreadAntennaNote": {
+      const { antenna, note } = data.body;
+      return [`アンテナ: ${antenna.name}`, { body: `${getUserName(note.user)}: ${note.text ?? ""}`, icon: note.user.avatarUrl ?? "/icons/icon-192.png", tag: `antenna:${antenna.id}`, data: { url: "/", userId: data.userId, type: data.type, body: data.body }, renotify: true }];
+    }
+    case "newChatMessage": {
+      const { fromUser, text, toRoom } = data.body;
+      const title = toRoom ? `${toRoom.name}: ${getUserName(fromUser)}` : getUserName(fromUser);
+      return [title, { body: text, icon: fromUser.avatarUrl ?? "/icons/icon-192.png", tag: toRoom ? `chat:room:${data.body.toRoomId}` : `chat:user:${data.body.fromUserId}`, data: { url: "/", userId: data.userId, type: data.type, body: data.body }, renotify: true }];
+    }
+    default:
+      return null;
+  }
+}
+
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  event.waitUntil((async () => {
+    let data: PushNotificationData;
     try {
-      data = event.data.json();
+      data = event.data!.json();
     } catch (e) {
       console.error("[sw] Failed to parse push data:", e);
       return;
     }
 
-    try {
-      // Native Misskey push payload: { title, body, icon, tag, url }
-      // Legacy push-server payload: { title, body, tag, silent, renotify, data }
-      const title = data.title || "かぐや";
-      const notifUrl = data.url || data?.data?.url || "/";
-      const options: NotificationOptions = {
-        body: data.body || "",
-        tag: data.tag || `kaguya-${Date.now()}`,
-        icon: data.icon || "/icons/icon-192.png",
-        badge: "/icons/icon-192.png",
-        silent: data.silent !== false,
-        renotify: data.renotify === true,
-        data: { url: notifUrl },
-      };
+    // Ignore stale notifications (older than 1 day)
+    if (Date.now() - data.dateTime > 1000 * 60 * 60 * 24) return;
 
-      await self.registration.showNotification(title, options);
-    } catch (e) {
-      console.error("[sw] Failed to show notification:", e);
+    if (data.type === "readAllNotifications") {
+      const notifications = await self.registration.getNotifications();
+      notifications.forEach((n) => n.close());
+      return;
     }
-  })();
 
-  event.waitUntil(notificationPromise);
+    const composed = composeNotification(data);
+    if (!composed) return;
+    const [title, options] = composed;
+    await self.registration.showNotification(title, { badge: "/icons/icon-192.png", ...options });
+  })());
 });
 
 // ============================================================

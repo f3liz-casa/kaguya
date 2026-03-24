@@ -2,11 +2,17 @@
 
 type toastType = [#error | #warning | #info | #success]
 
+type toastAction = {
+  label: string,
+  onClick: unit => unit,
+}
+
 type toast = {
   id: string,
   message: string,
   type_: toastType,
   timestamp: float,
+  action: option<toastAction>,
 }
 
 // Global State
@@ -30,20 +36,25 @@ let dismissToast = (id: string): unit => {
   PreactSignals.setValue(toasts, PreactSignals.value(toasts)->Array.filter(toast => toast.id != id))
 }
 
-let addToast = (~message: string, ~type_: toastType): unit => {
+let addToast = (~message: string, ~type_: toastType, ~action: option<toastAction>=None): unit => {
   let newToast = {
     id: generateId(),
     message,
     type_,
     timestamp: Date.now(),
+    action,
   }
 
   PreactSignals.setValue(toasts, Array.concat(PreactSignals.value(toasts), [newToast]))
 
-  // Auto-dismiss after timeout
+  // Auto-dismiss after timeout (longer if there's an action)
+  let timeout = switch action {
+  | Some(_) => 30000
+  | None => Float.toInt(autoDismissTimeout)
+  }
   let _ = SetTimeout.make(() => {
     dismissToast(newToast.id)
-  }, Float.toInt(autoDismissTimeout))
+  }, timeout)
 }
 
 let clearAll = (): unit => {
@@ -66,4 +77,8 @@ let showInfo = (message: string): unit => {
 
 let showSuccess = (message: string): unit => {
   addToast(~message, ~type_=#success)
+}
+
+let showInfoWithAction = (message: string, action: toastAction): unit => {
+  addToast(~message, ~type_=#info, ~action=Some(action))
 }

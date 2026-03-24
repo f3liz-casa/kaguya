@@ -103,18 +103,27 @@ let generateScript = async (client: Misskey.t, accountId: string): result<unit, 
               PreactSignals.setValue(state, PermissionDenied)
               Error("Notification permission denied")
             } else {
-              // 3. Subscribe browser to push using instance VAPID key
-              let registration = await ServiceWorkerAPI.register("/sw.js")
+              // 3. Wait for the already-registered SW to be ready, then subscribe
+              let registration = await ServiceWorkerAPI.ready
               let pm = ServiceWorkerAPI.pushManager(registration)
 
-              let existingSub = await ServiceWorkerAPI.getSubscription(pm)
-              let subscription = switch existingSub->Nullable.toOption {
-              | Some(sub) => sub
-              | None => {
-                  let opts = ServiceWorkerAPI.makeSubscribeOptions(vapidKey)
-                  await ServiceWorkerAPI.subscribe(pm, opts)
-                }
+              if !ServiceWorkerAPI.isControlled() {
+                PreactSignals.setValue(state, Error("Service Worker is not yet controlling this page. Please reload and try again."))
+                Error("Service Worker not controlling page")
+              } else {
+
+              let existingSubResult = await ServiceWorkerAPI.getSubscription(pm)->Promise.catch(_ =>
+                Promise.resolve(Nullable.null)
+              )
+              // If there's a broken existing subscription, unsubscribe it first
+              let _ = switch existingSubResult->Nullable.toOption {
+              | Some(sub) =>
+                await ServiceWorkerAPI.unsubscribe(sub)->Promise.catch(_ => Promise.resolve(false))
+              | None => false
               }
+              let opts = ServiceWorkerAPI.makeSubscribeOptions(vapidKey)
+              Console.log("[PushNotification] Subscribing with VAPID key...")
+              let subscription = await ServiceWorkerAPI.subscribe(pm, opts)
 
               let endpoint = ServiceWorkerAPI.endpoint(subscription)
               let p256dh = ServiceWorkerAPI.encodeKeyBase64Url(subscription->ServiceWorkerAPI.getKey("p256dh"))
@@ -146,6 +155,7 @@ let generateScript = async (client: Misskey.t, accountId: string): result<unit, 
 
               PreactSignals.setValue(state, AwaitingScript(script))
               Ok()
+              }
             }
           }
         }
@@ -156,6 +166,7 @@ let generateScript = async (client: Misskey.t, accountId: string): result<unit, 
         | Some(jsExn) => JsExn.message(jsExn)->Option.getOr("Unknown error")
         | None => "Unknown error"
         }
+        Console.error2("[PushNotification] generateScript failed:", exn)
         PreactSignals.setValue(state, Error(msg))
         Error("Script generation failed: " ++ msg)
       }
@@ -175,9 +186,11 @@ let unsubscribe = async (_client: Misskey.t, accountId: string): result<unit, st
   // The Misskey instance will eventually clean up the dead endpoint.
   try {
     if ServiceWorkerAPI.isSupported() {
-      let registration = await ServiceWorkerAPI.register("/sw.js")
+      let registration = await ServiceWorkerAPI.ready
       let pm = ServiceWorkerAPI.pushManager(registration)
-      let existingSub = await ServiceWorkerAPI.getSubscription(pm)
+      let existingSub = await ServiceWorkerAPI.getSubscription(pm)->Promise.catch(_ =>
+        Promise.resolve(Nullable.null)
+      )
       switch existingSub->Nullable.toOption {
       | Some(sub) => {
           let _ = await ServiceWorkerAPI.unsubscribe(sub)
@@ -211,9 +224,11 @@ let restore = async (client: Misskey.t, accountId: string): unit => {
   init()
   if isEnabledForAccount(accountId) && ServiceWorkerAPI.isSupported() {
     try {
-      let registration = await ServiceWorkerAPI.register("/sw.js")
+      let registration = await ServiceWorkerAPI.ready
       let pm = ServiceWorkerAPI.pushManager(registration)
-      let existingSub = await ServiceWorkerAPI.getSubscription(pm)
+      let existingSub = await ServiceWorkerAPI.getSubscription(pm)->Promise.catch(_ =>
+        Promise.resolve(Nullable.null)
+      )
       switch existingSub->Nullable.toOption {
       | Some(_) => PreactSignals.setValue(state, Subscribed)
       | None =>
@@ -226,7 +241,10 @@ let restore = async (client: Misskey.t, accountId: string): unit => {
         }
       }
     } catch {
-    | _ => PreactSignals.setValue(state, Unsubscribed)
+    | exn => {
+        Console.error2("[PushNotification] restore failed:", exn)
+        PreactSignals.setValue(state, Unsubscribed)
+      }
     }
   }
 }

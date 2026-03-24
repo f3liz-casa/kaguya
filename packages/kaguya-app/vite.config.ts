@@ -7,32 +7,29 @@ import preact from '@preact/preset-vite'
 import rescript from '@jihchi/vite-plugin-rescript'
 import UnoCSS from 'unocss/vite'
 import wasm from 'vite-plugin-wasm'
-import { VitePWA } from 'vite-plugin-pwa'
+import { serwist } from '@serwist/vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   resolve: {
+    preserveSymlinks: true,
     alias: {
       // Allows %%raw imports to reference src/ files via '@/' from compiled lib/es6/src/
       '@kaguya-src': path.resolve(__dirname, 'src'),
     },
   },
   plugins: [wasm(), UnoCSS(), preact(), rescript(),
-    VitePWA({
-      strategies: 'injectManifest',
-      srcDir: 'src',
-      filename: 'sw.ts',
-      registerType: 'autoUpdate',
-      injectManifest: {
-        injectionPoint: 'self.__SW_MANIFEST',
-        rollupFormat: 'iife', // classic format → output is sw.js (compatible with navigator.serviceWorker.register('/sw.js'))
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024, // 4 MiB (vendor bundle can exceed default 2 MiB limit)
-      },
-      manifest: false, // use static public/manifest.webmanifest
-      devOptions: {
-        enabled: false, // keep dev simple; push notifications tested in production
-      },
+    serwist({
+      swSrc: 'src/sw.ts',
+      swDest: 'sw.js',
+      globDirectory: 'dist',
+      injectionPoint: 'self.__SW_MANIFEST',
+      rollupFormat: 'iife',
+      maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
     }),
     // OAuth2 proxy for dev server (production uses Cloudflare Worker)
     {
@@ -70,6 +67,7 @@ export default defineConfig({
     }],
   build: {
     target:"esnext",
+    sourcemap: true,
     // Ensure proper asset paths for Cloudflare Workers
     assetsDir: 'assets',
     rollupOptions: {

@@ -3,7 +3,7 @@
 type reactionAcceptance = SharedTypes.reactionAcceptance
 
 type hookResult = {
-  isLoading: bool,
+  pendingReaction: option<string>,
   showEmojiPicker: bool,
   reactionArray: array<(string, int)>,
   optimisticMyReaction: option<string>,
@@ -20,7 +20,7 @@ let useReactionBar = (
   ~reactions: Dict.t<int>,
   ~myReaction: option<string>,
 ): hookResult => {
-  let (isLoading, setIsLoading) = PreactHooks.useState(() => false)
+  let (pendingReaction, setPendingReaction) = PreactHooks.useState(() => None)
   let (showEmojiPicker, setShowEmojiPicker) = PreactHooks.useState(() => false)
   let (optimisticReactions, setOptimisticReactions) = PreactHooks.useState(() => reactions)
   let (optimisticMyReaction, setOptimisticMyReaction) = PreactHooks.useState(() => myReaction)
@@ -44,13 +44,13 @@ let useReactionBar = (
       if isReadOnly {
         ToastState.showError("Cannot react: You're in read-only mode")
         ()
-      } else if isLoading || !isLoggedIn {
+      } else if pendingReaction->Option.isSome || !isLoggedIn {
         ()
       } else {
         switch client {
         | None => ()
         | Some(c) => {
-            setIsLoading(_ => true)
+            setPendingReaction(_ => Some(reaction))
             let shouldRemove = optimisticMyReaction->Option.getOr("") == reaction
 
             if shouldRemove {
@@ -74,12 +74,12 @@ let useReactionBar = (
 
               let result = await c->Misskey.Notes.unreact(noteId)
               switch result {
-              | Ok(_) => setIsLoading(_ => false)
+              | Ok(_) => setPendingReaction(_ => None)
               | Error(msg) => {
                   ToastState.showError("Failed to remove reaction: " ++ msg)
                   setOptimisticMyReaction(_ => myReaction)
                   setOptimisticReactions(_ => reactions)
-                  setIsLoading(_ => false)
+                  setPendingReaction(_ => None)
                 }
               }
             } else {
@@ -109,12 +109,12 @@ let useReactionBar = (
 
               let result = await c->Misskey.Notes.react(noteId, reaction)
               switch result {
-              | Ok(_) => setIsLoading(_ => false)
+              | Ok(_) => setPendingReaction(_ => None)
               | Error(msg) => {
                   ToastState.showError("Failed to add reaction: " ++ msg)
                   setOptimisticMyReaction(_ => myReaction)
                   setOptimisticReactions(_ => reactions)
-                  setIsLoading(_ => false)
+                  setPendingReaction(_ => None)
                 }
               }
             }
@@ -134,7 +134,7 @@ let useReactionBar = (
     ->Array.toSorted(((_, countA), (_, countB)) => Float.fromInt(countB) -. Float.fromInt(countA))
 
   {
-    isLoading,
+    pendingReaction,
     showEmojiPicker,
     reactionArray,
     optimisticMyReaction,

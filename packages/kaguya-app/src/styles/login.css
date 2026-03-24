@@ -1,0 +1,162 @@
+/* ============================================================
+   Login Page
+   ============================================================ */
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 2rem;
+}
+
+.login-card {
+  max-width: 400px;
+  width: 100%;
+  background: var(--pico-card-background-color);
+  border-radius: var(--pico-border-radius);
+  box-shadow: var(--pico-card-box-shadow);
+  border: 1px solid var(--pico-card-border-color);
+}
+
+.login-card header {
+  text-align: center;
+  padding-bottom: 0;
+}
+
+.login-title {
+  color: var(--pico-primary);
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.1em;
+}
+
+.login-subtitle {
+  color: var(--pico-muted-color);
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+.login-card footer {
+  text-align: center;
+  padding-top: 0;
+}
+
+.login-help {
+  color: var(--pico-muted-color);
+}
+
+.login-invalid-accounts {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--pico-del-color, #e74c3c);
+  border-radius: var(--pico-border-radius);
+  padding: 0.75rem;
+}
+
+.login-invalid-accounts-title {
+  font-size: 0.875rem;
+  color: var(--pico-del-color, #e74c3c);
+  margin-bottom: 0.5rem;
+}
+
+.login-invalid-account-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.login-invalid-account-remove {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  background: transparent;
+  border: 1px solid var(--pico-del-color, #e74c3c);
+  color: var(--pico-del-color, #e74c3c);
+  border-radius: var(--pico-border-radius);
+  cursor: pointer;
+  margin: 0;
+  width: auto;
+}
+
+.login-invalid-account-remove:hover {
+  background: var(--pico-del-color, #e74c3c);
+  color: white;
+}
+
+.login-method-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1.5rem;
+}
+
+.login-method-tabs button {
+  flex: 1;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--pico-card-border-color);
+  background: transparent;
+  color: var(--pico-muted-color);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 0;
+}
+
+.login-method-tabs button:hover {
+  border-color: var(--pico-primary);
+  color: var(--pico-primary);
+  transform: none;
+}
+
+.login-method-tabs button.active {
+  background: var(--pico-primary);
+  border-color: var(--pico-primary);
+  color: white;
+}
+
+.success-message {
+  background: #f0fdf4;
+  border: 2px solid #22c55e;
+  border-radius: var(--pico-border-radius);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  animation: slideInDown 0.4s ease-out;
+  text-align: center;
+}
+
+.success-message p {
+  color: #15803d;
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.error-message {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--pico-border-radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.error-message p {
+  color: #b91c1c;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.error-message a {
+  color: #b91c1c;
+  text-decoration: underline;
+  margin-top: 0.5rem;
+  display: inline-block;
+}
+
+.login-account-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}

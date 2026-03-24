@@ -8,6 +8,7 @@ type t = {
   host: string,
   avatarUrl: string,
   permissionMode: AuthTypes.permissionMode,
+  misskeyUserId: string,
 }
 
 // Generate a unique account ID from origin + username
@@ -44,6 +45,7 @@ let encode = (account: t): JSON.t => {
   dict->Dict.set("host", JSON.Encode.string(account.host))
   dict->Dict.set("avatarUrl", JSON.Encode.string(account.avatarUrl))
   dict->Dict.set("permissionMode", JSON.Encode.string(permissionModeToString(account.permissionMode)))
+  dict->Dict.set("misskeyUserId", JSON.Encode.string(account.misskeyUserId))
   JSON.Encode.object(dict)
 }
 
@@ -73,6 +75,7 @@ let decode = (json: JSON.t): option<t> => {
         permissionMode: getString("permissionMode")
           ->Option.map(permissionModeFromString)
           ->Option.getOr(Standard),
+        misskeyUserId: getString("misskeyUserId")->Option.getOr(""),
       })
     | _ => None
     }

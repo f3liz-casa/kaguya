@@ -52,7 +52,13 @@ let make = () => {
 
   | Unsubscribed | Error(_) =>
     <button className="push-notification-toggle" onClick={handleEnable} type_="button">
-      {Preact.string(pushState == Unsubscribed ? "🔕 プッシュ通知を有効にする" : "⚠️ プッシュ通知を有効にする")}
+      {Preact.string(
+        switch pushState {
+        | Error(msg) if msg->String.includes("reload") => "⚠️ ページを再読み込みして再試行"
+        | Error(_) => "⚠️ プッシュ通知を有効にする"
+        | _ => "🔕 プッシュ通知を有効にする"
+        }
+      )}
     </button>
 
   | GeneratingScript =>

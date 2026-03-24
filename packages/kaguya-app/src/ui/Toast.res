@@ -6,10 +6,10 @@ module ToastItem = {
   @jsx.component
   let make = (~toast: ToastState.toast, ~onDismiss: unit => unit) => {
     let (backgroundColor, borderColor, icon) = switch toast.type_ {
-    | #error => ("rgba(220, 38, 38, 0.1)", "#dc2626", "❌")
-    | #warning => ("rgba(234, 179, 8, 0.1)", "#eab308", "⚠️")
-    | #info => ("rgba(59, 130, 246, 0.1)", "#3b82f6", "ℹ️")
-    | #success => ("rgba(34, 197, 94, 0.1)", "#22c563", "✓")
+    | #error => ("rgba(220, 38, 38, 0.85)", "#dc2626", "❌")
+    | #warning => ("rgba(234, 179, 8, 0.85)", "#eab308", "⚠️")
+    | #info => ("rgba(37, 99, 235, 0.85)", "#3b82f6", "ℹ️")
+    | #success => ("rgba(22, 163, 74, 0.85)", "#22c563", "✓")
     }
 
     let containerStyle = Style.make(
@@ -40,6 +40,19 @@ module ToastItem = {
       (),
     )
 
+    let actionButtonStyle = Style.make(
+      ~marginTop="8px",
+      ~padding="4px 10px",
+      ~fontSize="13px",
+      ~fontWeight="600",
+      ~background="transparent",
+      ~border=`1px solid ${borderColor}`,
+      ~borderRadius="4px",
+      ~cursor="pointer",
+      ~color="var(--color)",
+      (),
+    )
+
     let closeButtonStyle = Style.make(
       ~position="absolute",
       ~top="8px",
@@ -58,7 +71,18 @@ module ToastItem = {
 
     <div style={containerStyle} role="alert" ariaLive=#assertive>
       <span style={iconStyle} ariaHidden={true}> {Preact.string(icon)} </span>
-      <div style={messageStyle}> {Preact.string(toast.message)} </div>
+      <div style={messageStyle}>
+        {Preact.string(toast.message)}
+        {switch toast.action {
+        | Some(action) =>
+          <div>
+            <button style={actionButtonStyle} onClick={_ => action.onClick()} type_="button">
+              {Preact.string(action.label)}
+            </button>
+          </div>
+        | None => Preact.null
+        }}
+      </div>
       <button
         style={closeButtonStyle}
         onClick={_ => onDismiss()}

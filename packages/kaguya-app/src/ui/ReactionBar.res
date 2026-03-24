@@ -12,7 +12,7 @@ let make = (
   ~reactionAcceptance: option<reactionAcceptance>,
 ) => {
   let {
-    isLoading,
+    pendingReaction,
     showEmojiPicker,
     reactionArray,
     optimisticMyReaction,
@@ -94,7 +94,7 @@ let make = (
               handleReactionClick(reaction)
             }
           }}
-          disabled={isLoading || isReadOnly}
+          disabled={pendingReaction->Option.isSome || isReadOnly}
           title={if isReadOnly {
             "Read-only mode: Cannot react"
           } else if isActive {
@@ -148,7 +148,7 @@ let make = (
             HtmlElement.setBackground(target, "var(--pico-card-border-color)")
           }}
           onClick={_ => openEmojiPicker()}
-          disabled={isLoading}
+          disabled={pendingReaction->Option.isSome}
           title="Add reaction"
           ariaLabel="Add reaction"
           type_="button"

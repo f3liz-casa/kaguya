@@ -33,67 +33,49 @@ let useTimelineSelector = (): hookResult => {
   let (state, setState) = PreactHooks.useState(() => defaultLoadedState())
 
   PreactSignals.useSignalEffect(() => {
-    let loadTimelines = async () => {
-      let clientOpt = PreactSignals.value(AppState.client)
+    let clientOpt = PreactSignals.value(AppState.client)
+    let antennas = PreactSignals.value(TimelineStore.antennas)
+    let lists = PreactSignals.value(TimelineStore.lists)
+    let channels = PreactSignals.value(TimelineStore.channels)
 
-      switch clientOpt {
-      | Some(client) => {
-          let customItems = []
-          let antennas = PreactSignals.value(TimelineStore.antennas)
-          let lists = PreactSignals.value(TimelineStore.lists)
-          let channels = PreactSignals.value(TimelineStore.channels)
+    switch clientOpt {
+    | Some(_) => {
+        let customItems = []
 
-          if Array.length(antennas) == 0 && Array.length(lists) == 0 && Array.length(channels) == 0 {
-            let (antennasResult, listsResult, channelsResult) = await Promise.all3((
-              client->Misskey.CustomTimelines.antennas,
-              client->Misskey.CustomTimelines.lists,
-              client->Misskey.CustomTimelines.channels,
-            ))
-            TimelineStore.setFromInitData(
-              ~antennasResult,
-              ~listsResult,
-              ~channelsResult,
-              ~homeTimelineResult=None,
-            )
+        antennas->Array.forEach(antenna => {
+          switch Misskey.CustomTimelines.extractIdAndName(antenna) {
+          | Some((id, name)) => customItems->Array.push({type_: #antenna(id), name, category: #antenna})
+          | None => ()
           }
+        })
 
-          PreactSignals.value(TimelineStore.antennas)->Array.forEach(antenna => {
-            switch Misskey.CustomTimelines.extractIdAndName(antenna) {
-            | Some((id, name)) => customItems->Array.push({type_: #antenna(id), name, category: #antenna})
-            | None => ()
-            }
-          })
-
-          PreactSignals.value(TimelineStore.lists)->Array.forEach(list => {
-            switch Misskey.CustomTimelines.extractIdAndName(list) {
-            | Some((id, name)) => customItems->Array.push({type_: #list(id), name, category: #list})
-            | None => ()
-            }
-          })
-
-          PreactSignals.value(TimelineStore.channels)->Array.forEach(channel => {
-            switch Misskey.CustomTimelines.extractIdAndName(channel) {
-            | Some((id, name)) => customItems->Array.push({type_: #channel(id), name, category: #channel})
-            | None => ()
-            }
-          })
-
-          let allTimelines = Array.concat(standardTimelines, customItems)
-          setState(_ => Loaded({
-            customTimelines: allTimelines,
-            selectedTimeline: standardTimelines->Array.getUnsafe(0),
-          }))
-        }
-      | None => {
-          let authState = PreactSignals.value(AppState.authState)
-          if authState != LoggingIn {
-            setState(_ => Error("Not connected"))
+        lists->Array.forEach(list => {
+          switch Misskey.CustomTimelines.extractIdAndName(list) {
+          | Some((id, name)) => customItems->Array.push({type_: #list(id), name, category: #list})
+          | None => ()
           }
+        })
+
+        channels->Array.forEach(channel => {
+          switch Misskey.CustomTimelines.extractIdAndName(channel) {
+          | Some((id, name)) => customItems->Array.push({type_: #channel(id), name, category: #channel})
+          | None => ()
+          }
+        })
+
+        let allTimelines = Array.concat(standardTimelines, customItems)
+        setState(_ => Loaded({
+          customTimelines: allTimelines,
+          selectedTimeline: standardTimelines->Array.getUnsafe(0),
+        }))
+      }
+    | None => {
+        let authState = PreactSignals.value(AppState.authState)
+        if authState != LoggingIn {
+          setState(_ => Error("Not connected"))
         }
       }
     }
-
-    let _ = loadTimelines()
     None
   })
 

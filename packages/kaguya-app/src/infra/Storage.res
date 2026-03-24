@@ -20,6 +20,9 @@ let keyPermissionMode = "kaguya:permissionMode"
 let keyAccounts = "kaguya:accounts"
 let keyActiveAccountId = "kaguya:activeAccountId"
 
+// Push notification: maps accountId -> Misskey userId
+let keyPushUserIdPrefix = "kaguya:pushUserId:"
+
 // OAuth2 storage keys
 let keyOAuth2CodeVerifier = "kaguya:oauth2:codeVerifier"
 let keyOAuth2State = "kaguya:oauth2:state"

@@ -11,6 +11,52 @@ module NotePageRoute = {
   }
 }
 
+// Handles push notification redirects: /push/notes/:noteId?userId=<misskeyUserId>
+// Switches to the matching account then redirects to /notes/:noteId/:host
+module PushNoteRoute = {
+  @jsx.component
+  let make = () => {
+    let params = Wouter.useParams()
+    let noteId = params->Dict.get("noteId")->Option.getOr("")
+    let navigate = Wouter.useNavigateWithOptions()
+
+    PreactHooks.useEffect0(() => {
+      let search = %raw(`window.location.search`)
+      let sp = URLSearchParams.make(search)
+      let userId = URLSearchParams.get(sp, "userId")
+
+      let accounts = PreactSignals.value(AppState.accounts)
+      let matchedAccount = switch userId {
+      | Some(uid) => accounts->Array.find(a => a.misskeyUserId == uid)
+      | None => None
+      }
+
+      let opts = {Wouter.replace: true}
+      switch matchedAccount {
+      | Some(account) =>
+        if account.id != PreactSignals.value(AppState.activeAccountId)->Option.getOr("") {
+          let _ = AuthManager.switchAccount(account.id)->Promise.then(_ => {
+            navigate("/notes/" ++ noteId ++ "/" ++ account.host, opts)
+            Promise.resolve()
+          })
+        } else {
+          navigate("/notes/" ++ noteId ++ "/" ++ account.host, opts)
+        }
+      | None =>
+        let host = PreactSignals.value(AppState.instanceName)
+        navigate("/notes/" ++ noteId ++ "/" ++ host, opts)
+      }
+      None
+    })
+
+    <Layout>
+      <div className="loading-container">
+        <p> {Preact.string("読み込み中...")} </p>
+      </div>
+    </Layout>
+  }
+}
+
 let parseAcct = (acct: string): (string, option<string>) => {
   switch acct->String.indexOf("@") {
   | -1 => (acct, None)
@@ -69,6 +115,9 @@ let make = () => {
       </Wouter.Route>
       <Wouter.Route path="/notes/:noteId/:host">
         <NotePageRoute />
+      </Wouter.Route>
+      <Wouter.Route path="/push/notes/:noteId">
+        <PushNoteRoute />
       </Wouter.Route>
       <Wouter.Route path="/notes">
         <Layout>
