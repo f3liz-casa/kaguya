@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { useState, useRef } from 'preact/hooks'
+import { useState, useRef, useEffect } from 'preact/hooks'
 import type { NoteView } from '../domain/note/noteView'
 import type { Visibility } from '../lib/backend'
 import * as Backend from '../lib/backend'
@@ -13,6 +13,8 @@ export type Attachment = {
   file: File
   preview: string
 }
+
+const MAX_ATTACHMENTS = 4
 
 export type Composer = {
   text: string
@@ -50,6 +52,21 @@ export function usePostComposer(opts?: { replyTo?: NoteView; onPosted?: () => vo
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
+  const attachedFilesRef = useRef<Attachment[]>([])
+  attachedFilesRef.current = attachedFiles
+  useEffect(() => () => {
+    attachedFilesRef.current.forEach(item => URL.revokeObjectURL(item.preview))
+  }, [])
+
+  function addFiles(files: File[]) {
+    if (files.length === 0) return
+    const remaining = MAX_ATTACHMENTS - attachedFilesRef.current.length
+    if (remaining <= 0) return
+    const accepted = files.slice(0, remaining)
+    const newItems = accepted.map(file => ({ file, preview: URL.createObjectURL(file) }))
+    setAttachedFiles(prev => [...prev, ...newItems])
+  }
+
   function removeAttachment(idx: number) {
     setAttachedFiles(prev => {
       URL.revokeObjectURL(prev[idx].preview)
@@ -60,8 +77,7 @@ export function usePostComposer(opts?: { replyTo?: NoteView; onPosted?: () => vo
   function handleFileChange(e: Event) {
     const input = e.currentTarget as HTMLInputElement
     const files = Array.from(input.files ?? [])
-    const newItems = files.map(file => ({ file, preview: URL.createObjectURL(file) }))
-    setAttachedFiles(prev => [...prev, ...newItems])
+    addFiles(files)
     input.value = ''
   }
 
@@ -73,8 +89,7 @@ export function usePostComposer(opts?: { replyTo?: NoteView; onPosted?: () => vo
       .filter(Boolean) as File[]
     if (imageFiles.length > 0) {
       e.preventDefault()
-      const newItems = imageFiles.map(file => ({ file, preview: URL.createObjectURL(file) }))
-      setAttachedFiles(prev => [...prev, ...newItems])
+      addFiles(imageFiles)
     }
   }
 
@@ -138,6 +153,6 @@ export function usePostComposer(opts?: { replyTo?: NoteView; onPosted?: () => vo
     toggleVisibilityMenu: () => setShowVisibilityMenu(v => !v),
     setVisibilityAndClose: v => { setVisibility(v); setShowVisibilityMenu(false) },
     handleSubmit, handleFileChange, handlePaste, removeAttachment, openFilePicker,
-    canAttachMore: attachedFiles.length < 4,
+    canAttachMore: attachedFiles.length < MAX_ATTACHMENTS,
   }
 }
