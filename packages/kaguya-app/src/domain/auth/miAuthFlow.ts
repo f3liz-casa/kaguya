@@ -74,7 +74,7 @@ export async function checkMiAuth(): Promise<Result<void, LoginError>> {
   const origin = storage.get(storage.keyMiAuthOrigin)
 
   if (!sessionId || !origin) {
-    return err({ type: 'UnknownError', message: 'Session not found' })
+    return err({ type: 'SessionExpired' })
   }
 
   authState.value = 'LoggingIn'
