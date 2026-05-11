@@ -50,6 +50,10 @@ export function MiAuthCallbackPage() {
         }
       } catch (e) {
         console.error('MiAuthCallbackPage: Exception', e)
+        if (isMounted) {
+          setStatus('error')
+          setErrorMessage(e instanceof Error ? e.message : t('error.unknown'))
+        }
       }
     })()
 

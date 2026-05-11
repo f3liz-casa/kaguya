@@ -52,8 +52,19 @@ const serwist = new Serwist({
       }),
     },
     // Cache API requests with network-first (stale-while-revalidate for speed)
+    // Exclude auth-sensitive paths so logout / account-switch doesn't serve
+    // stale "logged-in" responses for up to 5 minutes.
     {
-      matcher: ({ url }) => url.pathname.startsWith("/api/"),
+      matcher: ({ url }) => {
+        if (!url.pathname.startsWith("/api/")) return false;
+        const sensitive = [
+          "/api/i/",
+          "/api/auth/",
+          "/api/users/me",
+          "/api/notifications/",
+        ];
+        return !sensitive.some((p) => url.pathname.includes(p));
+      },
       handler: new StaleWhileRevalidate({
         cacheName: "api-cache",
         plugins: [
