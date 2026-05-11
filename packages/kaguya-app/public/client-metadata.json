@@ -1,0 +1,12 @@
+{
+  "client_id": "https://kaguya.f3liz.casa/client-metadata.json",
+  "client_name": "Kaguya",
+  "client_uri": "https://kaguya.f3liz.casa",
+  "redirect_uris": ["https://kaguya.f3liz.casa/oauth-callback"],
+  "grant_types": ["authorization_code", "refresh_token"],
+  "response_types": ["code"],
+  "scope": "atproto transition:generic",
+  "dpop_bound_access_tokens": true,
+  "token_endpoint_auth_method": "none",
+  "application_type": "web"
+}

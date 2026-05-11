@@ -1,15 +1,17 @@
 // SPDX-License-Identifier: MPL-2.0
 
 import path from 'path'
+import fs from 'fs'
+import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
-import rescript from '@jihchi/vite-plugin-rescript'
 import UnoCSS from 'unocss/vite'
-import wasm from 'vite-plugin-wasm'
 import { serwist } from '@serwist/vite'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const require = createRequire(import.meta.url)
+const twemojiSvgDir = path.dirname(require.resolve('@twemoji/svg/package.json'))
 
 export default defineConfig({
   define: {
@@ -18,22 +20,18 @@ export default defineConfig({
   resolve: {
     preserveSymlinks: true,
     alias: {
-      // Allows %%raw imports to reference src/ files via '@/' from compiled lib/es6/src/
       '@kaguya-src': path.resolve(__dirname, 'src'),
+      'sury/lib/es6/src/S.mjs': 'sury/src/S.res.mjs',
     },
   },
-  plugins: [wasm(), UnoCSS(), preact({
-    prerender: {
-      enabled: true,
-      renderTarget: '#root',
-      // Bake login page (/) + timeline (/notifications) + a note skeleton.
-      // The note route uses placeholder segments; the skeleton is route-specific HTML.
-      additionalPretendRoutes: [
-        '/notifications',
-        '/notes/prerender/prerender.invalid',
-      ],
-    },
-  }), rescript(),
+  plugins: [
+    UnoCSS(),
+    preact({
+      prerender: {
+        enabled: false,
+        renderTarget: '#root',
+      },
+    }),
     serwist({
       swSrc: 'src/sw.ts',
       swDest: 'sw.js',
@@ -42,60 +40,85 @@ export default defineConfig({
       rollupFormat: 'iife',
       maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
     }),
+    // Serve @twemoji/svg assets from /twemoji/ in dev and copy them into the build output.
+    {
+      name: 'twemoji-svg',
+      configureServer(server) {
+        server.middlewares.use('/twemoji/', (req, res, next) => {
+          const name = (req.url || '/').split('?')[0].replace(/^\/+/, '')
+          if (!/^[0-9a-f-]+\.svg$/i.test(name)) {
+            next()
+            return
+          }
+          const filePath = path.join(twemojiSvgDir, name)
+          if (!filePath.startsWith(twemojiSvgDir + path.sep) || !fs.existsSync(filePath)) {
+            res.statusCode = 404
+            res.end()
+            return
+          }
+          res.setHeader('Content-Type', 'image/svg+xml')
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+          fs.createReadStream(filePath).pipe(res)
+        })
+      },
+      writeBundle(options) {
+        const outDir = options.dir || path.resolve(__dirname, 'dist')
+        const target = path.join(outDir, 'twemoji')
+        fs.mkdirSync(target, { recursive: true })
+        for (const entry of fs.readdirSync(twemojiSvgDir)) {
+          if (entry.endsWith('.svg')) {
+            fs.copyFileSync(path.join(twemojiSvgDir, entry), path.join(target, entry))
+          }
+        }
+      },
+    },
     // OAuth2 proxy for dev server (production uses Cloudflare Worker)
     {
       name: 'oauth-proxy',
       configureServer(server) {
         server.middlewares.use('/api/oauth-proxy/', async (req, res) => {
-          const targetUrl = decodeURIComponent(req.url.slice(1)); // remove leading /
+          const targetUrl = decodeURIComponent(req.url!.slice(1))
           if (!targetUrl.startsWith('https://')) {
-            res.writeHead(400);
-            res.end('Only HTTPS targets allowed');
-            return;
+            res.writeHead(400)
+            res.end('Only HTTPS targets allowed')
+            return
           }
           try {
             const proxyRes = await fetch(targetUrl, {
               method: req.method,
               headers: { 'Content-Type': req.headers['content-type'] || 'application/json' },
-              body: req.method !== 'GET' && req.method !== 'HEAD' ? await new Promise((resolve) => {
-                const chunks = [];
-                req.on('data', c => chunks.push(c));
-                req.on('end', () => resolve(Buffer.concat(chunks)));
+              body: req.method !== 'GET' && req.method !== 'HEAD' ? await new Promise<Buffer>((resolve) => {
+                const chunks: Buffer[] = []
+                req.on('data', (c: Buffer) => chunks.push(c))
+                req.on('end', () => resolve(Buffer.concat(chunks)))
               }) : undefined,
-            });
-            const body = await proxyRes.text();
+            })
+            const body = await proxyRes.text()
             res.writeHead(proxyRes.status, {
               'Content-Type': proxyRes.headers.get('content-type') || 'application/json',
               'Access-Control-Allow-Origin': '*',
-            });
-            res.end(body);
-          } catch (e) {
-            res.writeHead(502);
-            res.end('Proxy error: ' + e.message);
+            })
+            res.end(body)
+          } catch (e: unknown) {
+            res.writeHead(502)
+            res.end('Proxy error: ' + (e instanceof Error ? e.message : String(e)))
           }
-        });
+        })
       }
-    }],
+    }
+  ],
   build: {
-    target:"esnext",
+    target: 'esnext',
     sourcemap: true,
-    // Ensure proper asset paths for Cloudflare Workers
     assetsDir: 'assets',
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Split vendor chunks for better caching
           if (id.includes('node_modules')) {
-            if (id.includes('preact')) {
-              return 'vendor-preact';
-            }
-            if (id.includes('unocss')) {
-              return 'vendor-unocss';
-            }
-            if (id.includes('@picocss')) {
-              return 'vendor-pico';
-            }
-            return 'vendor';
+            if (id.includes('preact')) return 'vendor-preact'
+            if (id.includes('unocss')) return 'vendor-unocss'
+            if (id.includes('@picocss')) return 'vendor-pico'
+            return 'vendor'
           }
         }
       }

@@ -12,10 +12,10 @@
 .login-card {
   max-width: 400px;
   width: 100%;
-  background: var(--pico-card-background-color);
-  border-radius: var(--pico-border-radius);
-  box-shadow: var(--pico-card-box-shadow);
-  border: 1px solid var(--pico-card-border-color);
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
 }
 
 .login-card header {
@@ -24,16 +24,16 @@
 }
 
 .login-title {
-  color: var(--pico-primary);
-  font-size: 2rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  letter-spacing: 0.1em;
+  color: var(--primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.08em;
 }
 
 .login-subtitle {
-  color: var(--pico-muted-color);
-  font-size: 0.9rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
   margin-bottom: 0;
 }
 
@@ -42,121 +42,263 @@
   padding-top: 0;
 }
 
-.login-help {
-  color: var(--pico-muted-color);
+/* ── Validating state ──────────────────────────────── */
+.login-validating {
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  padding: var(--space-4) 0;
 }
 
+/* ── Account switcher ──────────────────────────────── */
+.login-account-switcher {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.login-account-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--duration) var(--ease),
+              border-color var(--duration) var(--ease),
+              box-shadow var(--duration) var(--ease);
+}
+
+.login-account-item:hover {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-hover);
+}
+
+.login-account-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.login-account-avatar-placeholder {
+  background: var(--surface-sunken);
+}
+
+.login-account-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-align: left;
+}
+
+.login-account-add {
+  justify-content: center;
+  border-style: dashed;
+  color: var(--ink-soft);
+  gap: var(--space-2);
+  font-size: 0.85rem;
+}
+
+.login-account-add:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-focus);
+}
+
+.login-account-add-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* ── Invalid accounts ──────────────────────────────── */
 .login-invalid-accounts {
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--pico-del-color, #e74c3c);
-  border-radius: var(--pico-border-radius);
-  padding: 0.75rem;
+  margin-top: var(--space-4);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  background: var(--color-error-bg);
 }
 
 .login-invalid-accounts-title {
-  font-size: 0.875rem;
-  color: var(--pico-del-color, #e74c3c);
-  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-error);
+  margin-bottom: var(--space-2);
 }
 
 .login-invalid-account-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.25rem 0;
-  font-size: 0.875rem;
+  padding: var(--space-1) 0;
+  font-size: 0.85rem;
 }
 
 .login-invalid-account-remove {
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.6rem;
   font-size: 0.8rem;
   background: transparent;
-  border: 1px solid var(--pico-del-color, #e74c3c);
-  color: var(--pico-del-color, #e74c3c);
-  border-radius: var(--pico-border-radius);
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   margin: 0;
   width: auto;
+  transition: background var(--duration) var(--ease),
+              color var(--duration) var(--ease);
 }
 
 .login-invalid-account-remove:hover {
-  background: var(--pico-del-color, #e74c3c);
+  background: var(--color-error);
   color: white;
 }
 
+/* ── Form ──────────────────────────────────────────── */
+.login-card form {
+  margin-top: var(--space-4);
+}
+
+.login-card form label {
+  margin-bottom: var(--space-4);
+}
+
+/* ── Backend / method tabs ─────────────────────────── */
 .login-method-tabs {
   display: flex;
-  gap: 0.5rem;
-  margin: 0.5rem 0 1.5rem;
+  gap: var(--space-1);
+  margin: var(--space-2) 0 var(--space-4);
+  background: var(--surface-sunken);
+  border-radius: var(--radius);
+  padding: 3px;
 }
 
 .login-method-tabs button {
   flex: 1;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--pico-card-border-color);
+  padding: 0.4rem 0.75rem;
+  border: none;
   background: transparent;
-  color: var(--pico-muted-color);
-  border-radius: 8px;
-  font-size: 0.875rem;
+  color: var(--ink-soft);
+  border-radius: calc(var(--radius) - 2px);
+  font-size: 0.8rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--duration) var(--ease);
   margin: 0;
 }
 
 .login-method-tabs button:hover {
-  border-color: var(--pico-primary);
-  color: var(--pico-primary);
-  transform: none;
+  color: var(--ink);
 }
 
 .login-method-tabs button.active {
-  background: var(--pico-primary);
-  border-color: var(--pico-primary);
-  color: white;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
 }
 
+/* ── Help / privacy text ───────────────────────────── */
+.login-help {
+  display: block;
+  margin-top: var(--space-3);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.login-privacy-note {
+  margin-top: var(--space-3);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ── Success / error messages ──────────────────────── */
 .success-message {
-  background: #f0fdf4;
-  border: 2px solid #22c55e;
-  border-radius: var(--pico-border-radius);
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  animation: slideInDown 0.4s ease-out;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success);
+  border-radius: var(--radius);
+  padding: var(--space-6);
+  margin-bottom: var(--space-4);
   text-align: center;
 }
 
 .success-message p {
-  color: #15803d;
+  color: var(--color-success);
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1.1rem;
   font-weight: 600;
 }
 
 .error-message {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  border-radius: var(--pico-border-radius);
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .error-message p {
-  color: #b91c1c;
+  color: var(--color-error);
   margin: 0;
   font-size: 0.875rem;
 }
 
 .error-message a {
-  color: #b91c1c;
+  color: var(--color-error);
   text-decoration: underline;
-  margin-top: 0.5rem;
+  margin-top: var(--space-2);
   display: inline-block;
 }
 
-.login-account-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  flex-shrink: 0;
+/* ── Permission details ────────────────────────────── */
+.login-permission-details {
+  margin-top: var(--space-2);
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.login-permission-details summary {
+  cursor: pointer;
+  color: var(--secondary);
+}
+
+.login-permission-details p {
+  margin: 0.3rem 0;
+  line-height: 1.5;
+}
+
+/* ── Auth callback shared ──────────────────────────── */
+.auth-error-details-summary {
+  font-size: 0.75rem;
+  color: var(--color-error);
+  cursor: pointer;
+}
+
+.auth-error-pre {
+  font-size: 0.65rem;
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  background: var(--color-error-bg);
+  border-radius: var(--radius-sm);
+  overflow: auto;
+  max-width: 100%;
+}
+
+.auth-error-back {
+  margin-top: var(--space-2);
+}
+
+.auth-redirect-hint {
+  font-size: 0.875rem;
+  font-weight: 400;
+  margin-top: var(--space-2);
+  color: var(--color-success);
 }

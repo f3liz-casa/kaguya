@@ -24,7 +24,9 @@ declare global {
 
 declare const self: ServiceWorkerGlobalScope;
 
-const SW_VERSION = "2.0.0";
+const SW_VERSION = "2.1.0";
+
+const NOTE_PREFETCH_CACHE = "kaguya-note-prefetch";
 
 // ============================================================
 // Serwist setup (precaching + runtime caching)
@@ -164,6 +166,27 @@ self.addEventListener("push", (event) => {
     if (!composed) return;
     const [title, options] = composed;
     await self.registration.showNotification(title, { badge: "/icons/icon-192.png", ...options });
+
+    // Cache partial note data from the push payload for instant preview
+    if (data.type === "notification" && data.body.note) {
+      const note = data.body.note;
+      const user = data.body.user;
+      if (note.id && user) {
+        try {
+          const cache = await caches.open(NOTE_PREFETCH_CACHE);
+          const preview = {
+            text: note.text ?? "",
+            userName: user.name ?? user.username,
+            userUsername: user.username,
+            avatarUrl: user.avatarUrl ?? "",
+          };
+          const key = `${self.location.origin}/_note-preview/${note.id}`;
+          await cache.put(key, new Response(JSON.stringify(preview), {
+            headers: { "Content-Type": "application/json" },
+          }));
+        } catch { /* best-effort */ }
+      }
+    }
   })());
 });
 

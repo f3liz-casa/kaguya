@@ -6,9 +6,13 @@ import data from '@iconify-json/tabler/icons.json'
 const used = [
   'arrow-back-up',
   'bell',
+  'bookmark',
+  'bookmark-filled',
+  'check',
   'chevron-down',
   'dots',
   'eye',
+  'filter',
   'home',
   'loader-2',
   'lock',

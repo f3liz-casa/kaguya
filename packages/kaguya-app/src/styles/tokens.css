@@ -1,0 +1,290 @@
+/* SPDX-License-Identifier: MPL-2.0 */
+/* tokens.css — Kaguya design tokens (mokume-gane, simple kindness)
+
+   Core principle: a small set of source-of-truth tokens (--bg, --surface,
+   --ink, --border, --primary, --shadow). Every legacy --pico-*, --sidebar-*,
+   --color-* etc. is an alias that derives from those — so the dark-mode
+   block only redefines the core, and the rest cascades automatically.
+
+   OKLCH everywhere. Borders sit at low opacity so they read as suggestion,
+   not boundary. Shadows are quiet — one resting, one on hover. */
+
+:root {
+  /* ── Core surfaces ──────────────────────────────────── */
+  --bg:             oklch(97.6% 0.008 88);   /* warm off-white page */
+  --surface:        oklch(100%  0     0);    /* card / popover */
+  --surface-sunken: oklch(94.5% 0.010 86);   /* sidebar / header / bottom-nav */
+  --surface-raised: oklch(98.6% 0.006 86);   /* dropdown / tooltip */
+
+  /* ── Ink ────────────────────────────────────────────── */
+  --ink:        oklch(28.0% 0.012 70);       /* primary text */
+  --ink-soft:   oklch(58.0% 0.012 80);       /* muted text */
+  --ink-strong: oklch(20.0% 0.012 70);       /* heading / strong */
+
+  /* ── Borders ────────────────────────────────────────── */
+  --border:        oklch(0% 0 0 / 0.09);
+  --border-strong: oklch(0% 0 0 / 0.18);
+
+  /* ── Accent ─────────────────────────────────────────── */
+  --primary:       oklch(73.8% 0.037 85.4);  /* warm beige, mokume-gane */
+  --primary-hover: oklch(68.4% 0.037 84.5);
+  --primary-focus: oklch(73.8% 0.037 85.4 / 0.20);
+  --primary-ink:   oklch(20.0% 0.012 70);    /* dark text on warm primary */
+
+  --secondary:       oklch(69.3% 0.066 155.7); /* sage */
+  --secondary-hover: oklch(63.2% 0.066 155.7);
+  --secondary-focus: oklch(69.3% 0.066 155.7 / 0.20);
+  --secondary-ink:   oklch(100% 0 0);
+
+  /* ── Semantic colors ────────────────────────────────── */
+  --color-error:      oklch(57.5% 0.18  25);
+  --color-error-bg:   oklch(94.0% 0.03  25);
+  --color-success:    oklch(58.0% 0.12 155);
+  --color-success-bg: oklch(95.0% 0.03 155);
+  --color-warning:    oklch(78.0% 0.16  85);
+  --color-warning-bg: oklch(95.0% 0.04  85);
+  --color-info:       oklch(58.0% 0.06 260);
+  --color-info-bg:    oklch(95.0% 0.015 260);
+  --color-live:       oklch(65.0% 0.17 160);
+
+  /* Unread-attention badge — neutral by design. Not an error. */
+  --badge-attention:     var(--ink-soft);
+  --badge-attention-ink: var(--surface);
+
+  /* ── Overlay ────────────────────────────────────────── */
+  --overlay-bg:          oklch(0%   0 0 / 0.50);
+  --overlay-hover:       oklch(0%   0 0 / 0.06);
+  --overlay-hover-light: oklch(100% 0 0 / 0.08);
+
+  /* ── Shadows — two values, calm ─────────────────────── */
+  --shadow:       0 1px 2px oklch(0% 0 0 / 0.05);
+  --shadow-hover: 0 2px 8px oklch(0% 0 0 / 0.06);
+
+  /* ── Typography ─────────────────────────────────────── */
+  --font: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+          "BIZ UDPGothic", "Yu Gothic", "Meiryo", -apple-system,
+          BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-size: 15px;
+  --line:      1.6;
+
+  /* ── Radii — three sizes ────────────────────────────── */
+  --radius-sm:   6px;
+  --radius:     12px;
+  --radius-pill: 9999px;
+
+  /* ── Spacing — 4px scale ────────────────────────────── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ── Semantic layout ───────────────────────────────── */
+  --avatar-size:         40px;
+  --avatar-gap:          var(--space-3);
+  --content-max-width:   680px;       /* reading-focused pages */
+  --timeline-max-width:  800px;       /* media-rich pages */
+  --touch-min:           44px;        /* WCAG 2.5.5 minimum */
+
+  /* ── Z-index layers ─────────────────────────────────── */
+  --z-sticky:   10;
+  --z-dropdown: 100;
+  --z-overlay:  500;
+  --z-modal:    1000;
+  --z-toast:    9999;
+
+  /* ── Motion ─────────────────────────────────────────── */
+  --duration:      0.15s;
+  --duration-slow: 0.30s;
+  --ease:          cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  /* ============================================================
+     Legacy aliases — every --pico-*, --sidebar-*, etc. used by
+     existing component CSS resolves through these. Do not delete
+     without grepping the components.* and pages.* files first.
+     ============================================================ */
+
+  /* Pico surface/text */
+  --pico-background-color:       var(--bg);
+  --pico-color:                  var(--ink);
+  --pico-card-background-color:  var(--surface);
+  --pico-card-border-color:      var(--border);
+  --pico-card-box-shadow:        var(--shadow);
+  --pico-muted-color:            var(--ink-soft);
+  --pico-muted-border-color:     var(--border);
+
+  /* Pico forms */
+  --pico-form-element-background-color: var(--surface);
+  --pico-form-element-border-color:     var(--border);
+  --pico-form-element-focus-color:      var(--primary);
+
+  /* Pico accent */
+  --pico-primary:           var(--primary);
+  --pico-primary-hover:     var(--primary-hover);
+  --pico-primary-focus:     var(--primary-focus);
+  --pico-primary-inverse:   var(--primary-ink);
+  --pico-secondary:         var(--secondary);
+  --pico-secondary-hover:   var(--secondary-hover);
+  --pico-secondary-focus:   var(--secondary-focus);
+  --pico-secondary-inverse: var(--secondary-ink);
+  --pico-accent:            var(--secondary);
+
+  /* Pico layout */
+  --pico-border-radius: var(--radius);
+  --pico-border-width:  1px;
+  --pico-spacing:       1.25rem;
+  --pico-font-family:   var(--font);
+  --pico-font-size:     var(--font-size);
+  --pico-line-height:   var(--line);
+
+  /* Component surface aliases */
+  --sidebar-bg:                   var(--surface-sunken);
+  --sidebar-border:               var(--border);
+  --sidebar-icon-color:           var(--ink-soft);
+  --sidebar-btn-hover-bg:         oklch(0% 0 0 / 0.06);
+  --header-bg:                    var(--surface-sunken);
+  --bottom-nav-bg:                var(--surface-sunken);
+  --bottom-nav-border:            var(--border);
+  --account-trigger-bg:           var(--surface);
+  --account-trigger-border:       var(--border);
+  --account-trigger-hover-bg:     var(--surface-sunken);
+  --account-trigger-hover-border: var(--border-strong);
+  --account-dropdown-bg:          var(--surface-raised);
+  --account-divider:              var(--border);
+
+  /* Text aliases */
+  --text-strong:     var(--ink);
+  --text-strong-alt: var(--ink-strong);
+  --text-muted:      var(--ink-soft);
+  --accent-active:   var(--primary);
+
+  /* Legacy radius aliases (kept for components.css / extracted styles) */
+  --radius-xs:    4px;
+  --radius-md:    var(--radius);
+  --radius-lg:    var(--radius);
+  --radius-xl:    20px;
+  --radius-full:  var(--radius-pill);
+  --radius-round: 50%;
+
+  /* Legacy shadow aliases — all collapse to the two real tokens */
+  --shadow-xs: var(--shadow);
+  --shadow-sm: var(--shadow);
+  --shadow-md: var(--shadow-hover);
+  --shadow-lg: var(--shadow-hover);
+  --shadow-xl: var(--shadow-hover);
+
+  /* Legacy duration / easing aliases */
+  --duration-fast:   var(--duration);
+  --duration-normal: var(--duration);
+  --ease-default:    var(--ease);
+  --ease-out:        var(--ease);
+}
+
+/* ============================================================
+   Dark mode — both system preference and explicit toggle, in
+   one grouped selector. Only the CORE tokens are redefined;
+   every alias above re-resolves through them automatically.
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:             oklch(22.7% 0.008 84);
+    --surface:        oklch(26.3% 0.009 67);
+    --surface-sunken: oklch(20.2% 0.005 67);
+    --surface-raised: oklch(28.5% 0.011 70);
+
+    --ink:        oklch(85.5% 0.011 67);
+    --ink-soft:   oklch(65.1% 0.016 70);
+    --ink-strong: oklch(92.0% 0.011 67);
+
+    --border:        oklch(100% 0 0 / 0.10);
+    --border-strong: oklch(100% 0 0 / 0.20);
+
+    --primary:       oklch(79.2% 0.041 80.8);
+    --primary-hover: oklch(73.0% 0.041 80.8);
+    --primary-focus: oklch(79.2% 0.041 80.8 / 0.20);
+    --primary-ink:   oklch(15.0% 0.010 84.6);
+
+    --color-error:      oklch(65.0% 0.16  25);
+    --color-error-bg:   oklch(25.0% 0.04  25);
+    --color-success:    oklch(68.0% 0.12 155);
+    --color-success-bg: oklch(25.0% 0.04 155);
+    --color-warning:    oklch(80.0% 0.14  85);
+    --color-warning-bg: oklch(28.0% 0.04  85);
+    --color-info:       oklch(65.0% 0.06 260);
+    --color-info-bg:    oklch(25.0% 0.02 260);
+    --color-live:       oklch(70.0% 0.15 160);
+
+    --overlay-bg:          oklch(0%   0 0 / 0.65);
+    --overlay-hover:       oklch(100% 0 0 / 0.06);
+    --overlay-hover-light: oklch(100% 0 0 / 0.08);
+
+    --shadow:       0 1px 2px oklch(0% 0 0 / 0.25);
+    --shadow-hover: 0 2px 8px oklch(0% 0 0 / 0.30);
+
+    --sidebar-btn-hover-bg: oklch(100% 0 0 / 0.08);
+  }
+}
+
+[data-theme="dark"] {
+  --bg:             oklch(22.7% 0.008 84);
+  --surface:        oklch(26.3% 0.009 67);
+  --surface-sunken: oklch(20.2% 0.005 67);
+  --surface-raised: oklch(28.5% 0.011 70);
+
+  --ink:        oklch(85.5% 0.011 67);
+  --ink-soft:   oklch(65.1% 0.016 70);
+  --ink-strong: oklch(92.0% 0.011 67);
+
+  --border:        oklch(100% 0 0 / 0.10);
+  --border-strong: oklch(100% 0 0 / 0.20);
+
+  --primary:       oklch(79.2% 0.041 80.8);
+  --primary-hover: oklch(73.0% 0.041 80.8);
+  --primary-focus: oklch(79.2% 0.041 80.8 / 0.20);
+  --primary-ink:   oklch(15.0% 0.010 84.6);
+
+  --color-error:      oklch(65.0% 0.16  25);
+  --color-error-bg:   oklch(25.0% 0.04  25);
+  --color-success:    oklch(68.0% 0.12 155);
+  --color-success-bg: oklch(25.0% 0.04 155);
+  --color-warning:    oklch(80.0% 0.14  85);
+  --color-warning-bg: oklch(28.0% 0.04  85);
+  --color-info:       oklch(65.0% 0.06 260);
+  --color-info-bg:    oklch(25.0% 0.02 260);
+  --color-live:       oklch(70.0% 0.15 160);
+
+  --overlay-bg:          oklch(0%   0 0 / 0.65);
+  --overlay-hover:       oklch(100% 0 0 / 0.06);
+  --overlay-hover-light: oklch(100% 0 0 / 0.08);
+
+  --shadow:       0 1px 2px oklch(0% 0 0 / 0.25);
+  --shadow-hover: 0 2px 8px oklch(0% 0 0 / 0.30);
+
+  --sidebar-btn-hover-bg: oklch(100% 0 0 / 0.08);
+}
+
+/* User preference: font-size override */
+:root[data-font-size="small"] { --font-size: 13px; }
+:root[data-font-size="large"] { --font-size: 17px; }
+
+/* User preference: reduce motion */
+[data-reduce-motion] *,
+[data-reduce-motion] *::before,
+[data-reduce-motion] *::after {
+  animation-duration: 0s !important;
+  animation-delay:    0s !important;
+  transition-duration: 0s !important;
+  transition-delay:   0s !important;
+}
+
+/* User preference: quiet mode — dampens attention-seeking cues. */
+[data-quiet-mode] .streaming-dot {
+  animation: none;
+}
+[data-quiet-mode] .streaming-indicator {
+  color: var(--ink-soft);
+}

@@ -7,7 +7,9 @@
     "build": "pnpm -r build",
     "dev": "pnpm -r dev",
     "test": "pnpm -r test",
-    "clean": "pnpm -r clean"
+    "clean": "pnpm -r clean",
+    "deploy:app": "pnpm --filter kaguya-app run deploy",
+    "deploy:app:dev": "pnpm --filter kaguya-app run deploy:dev"
   },
   "keywords": [],
   "author": "",

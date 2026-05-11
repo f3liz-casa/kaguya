@@ -63,7 +63,7 @@ code {
 
 /* Mentions */
 .mfm-mention {
-  color: var(--mention-color, #008000);
+  color: var(--mention-color, var(--color-success));
   text-decoration: none;
   font-weight: 500;
 }
@@ -85,8 +85,11 @@ code {
 
 /* Emoji */
 .mfm-emoji {
-  font-size: 1.2em;
-  vertical-align: -0.1em;
+  display: inline-block;
+  height: 1.25em;
+  width: 1.25em;
+  vertical-align: -0.25em;
+  margin: 0 0.05em;
 }
 
 .mfm-emoji-image {
@@ -102,7 +105,7 @@ code {
   /* Fallback for custom emojis that failed to load */
   display: inline-block;
   font-weight: 500;
-  color: var(--mfm-emoji-fallback-color, #888);
+  color: var(--mfm-emoji-fallback-color, var(--pico-muted-color));
 }
 
 /* Math */
