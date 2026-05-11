@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MPL-2.0
 
-export const en: Record<string, string> = {
+import { ja } from './ja'
+
+export const en: Record<keyof typeof ja, string> = {
   // App
   'app.title': 'Kaguya',
   'app.tagline': 'Kaguya — A gentle Misskey client',
