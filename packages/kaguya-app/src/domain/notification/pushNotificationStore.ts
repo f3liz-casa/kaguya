@@ -20,6 +20,8 @@ import type { BackendClient } from '../../lib/backend'
 import type { Result } from '../../infra/result'
 import { ok, err } from '../../infra/result'
 
+export type PushErrorKind = 'NeedsReload' | 'Generic'
+
 export type PushState =
   | 'NotSupported'
   | 'PermissionDenied'
@@ -27,7 +29,7 @@ export type PushState =
   | 'GeneratingScript'
   | { tag: 'AwaitingScript'; script: string }
   | 'Subscribed'
-  | { tag: 'Error'; message: string }
+  | { tag: 'Error'; kind: PushErrorKind; message: string }
 
 export const state = signal<PushState>('NotSupported')
 
@@ -109,7 +111,7 @@ export async function generateScript(bc: BackendClient, accountId: string): Prom
     const { Meta } = await import('../../lib/misskey')
     const metaResult = await Meta.get(client)
     if (!metaResult.ok) {
-      state.value = { tag: 'Error', message: metaResult.error }
+      state.value = { tag: 'Error', kind: 'Generic', message: metaResult.error }
       return err(`Failed to fetch instance meta: ${metaResult.error}`)
     }
 
@@ -127,7 +129,7 @@ export async function generateScript(bc: BackendClient, accountId: string): Prom
 
     const registration = await navigator.serviceWorker.ready
     if (!navigator.serviceWorker.controller) {
-      state.value = { tag: 'Error', message: 'Service Worker is not yet controlling this page. Please reload and try again.' }
+      state.value = { tag: 'Error', kind: 'NeedsReload', message: 'Service Worker is not yet controlling this page. Please reload and try again.' }
       return err('Service Worker not controlling page')
     }
 
@@ -167,7 +169,7 @@ export async function generateScript(bc: BackendClient, accountId: string): Prom
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error'
     console.error('[PushNotification] generateScript failed:', e)
-    state.value = { tag: 'Error', message: msg }
+    state.value = { tag: 'Error', kind: 'Generic', message: msg }
     return err(`Script generation failed: ${msg}`)
   }
 }
