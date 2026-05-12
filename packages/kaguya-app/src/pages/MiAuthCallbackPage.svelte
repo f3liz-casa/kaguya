@@ -33,6 +33,11 @@
     backToLogin: t('auth.back_to_login'),
     failed: t('auth.failed'),
     unknown: t('error.unknown'),
+    loggingIn: t('auth.logging_in'),
+    checking: t('auth.checking'),
+    loginSuccess: t('auth.login_success'),
+    redirectingHome: t('auth.redirecting_home'),
+    sessionExpired: t('auth.session_expired'),
   }))
 
   $effect(() => {
@@ -84,20 +89,20 @@
 
 <main class="container">
   <article class="login-card">
-    <header><h1>ログイン中...</h1></header>
+    <header><h1>{L.loggingIn}</h1></header>
     {#if status === 'checking'}
-      <div class="loading-container"><p>認証確認中...</p></div>
+      <div class="loading-container"><p>{L.checking}</p></div>
     {:else if status === 'success'}
       <div class="success-message">
         <div style="font-size: 2rem; margin-bottom: 0.5rem">✓</div>
-        <p>ログイン成功！</p>
+        <p>{L.loginSuccess}</p>
         <p style="font-size: 0.875rem; font-weight: 400; margin-top: 0.5rem; color: #158033">
-          ホームへ移動中...
+          {L.redirectingHome}
         </p>
       </div>
     {:else if status === 'permanent_error'}
       <div class="error-message">
-        <p>セッションが期限切れか見つかりません。</p>
+        <p>{L.sessionExpired}</p>
         {#if errorMessage}
           <details style="margin-top: 0.5rem">
             <summary class="auth-error-details-summary">{L.errorDetails}</summary>

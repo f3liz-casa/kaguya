@@ -7,8 +7,8 @@
   Not yet mounted at runtime — UserPage.tsx remains the live page
   until M5 mount swap.
 
-  "🤖 Bot" badge text is hard-coded in the Preact original; faithful
-  port keeps it verbatim — coto's PR-b audit retains it.
+  Bot badge text routed through user.bot_badge i18n key (was
+  hard-coded in the original; PR-b audit cleanup brought it under t()).
 -->
 
 <script lang="ts">
@@ -77,6 +77,7 @@
     noMore: t('user.no_more'),
     filterImagesOnly: t('user_filter.images_only'),
     filterNoRenotes: t('user_filter.no_renotes'),
+    botBadge: t('user.bot_badge'),
   }))
 
   const readOnly = $derived((loggedInR.value, isReadOnlyMode()))
@@ -227,7 +228,7 @@
           </h1>
           <span class="user-username">{fullUsername(profile)}</span>
           {#if profile.isBot}
-            <span class="user-bot-badge">🤖 Bot</span>
+            <span class="user-bot-badge"><span aria-hidden="true">🤖 </span>{L.botBadge}</span>
           {/if}
           {#if loggedInR.value && !readOnly && myId !== profile.id}
             <button
