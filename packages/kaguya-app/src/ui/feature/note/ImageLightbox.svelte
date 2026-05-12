@@ -9,6 +9,7 @@
 <script lang="ts">
   import { currentLocale, t } from '../../../infra/i18n'
   import { svelteSignal } from '../../svelteSignal.svelte'
+  import { escapeKey, scrollLock, outsideClick } from '../../modalActions'
 
   type Props = { url: string; name: string; onClose: () => void }
   let { url, name, onClose }: Props = $props()
@@ -18,20 +19,6 @@
     viewer: t('image.viewer'),
     closeViewer: t('image.close_viewer'),
   }))
-
-  $effect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  })
-
-  $effect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
-  })
 </script>
 
 <div
@@ -39,9 +26,14 @@
   role="dialog"
   aria-modal="true"
   aria-label={L.viewer}
-  onclick={() => onClose()}
+  use:scrollLock
 >
-  <div class="lightbox-content" role="presentation" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="lightbox-content"
+    role="presentation"
+    use:escapeKey={onClose}
+    use:outsideClick={onClose}
+  >
     <button class="lightbox-close" type="button" aria-label={L.closeViewer} onclick={() => onClose()}>×</button>
     <img class="lightbox-image" src={url} alt={name} onclick={() => onClose()} role="img" />
   </div>
