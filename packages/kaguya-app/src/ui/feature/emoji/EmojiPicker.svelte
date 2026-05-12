@@ -13,6 +13,7 @@
   import { currentLocale, t } from '../../../infra/i18n'
   import { proxyUrl } from '../../../infra/mediaProxy'
   import { svelteSignal } from '../../svelteSignal.svelte'
+  import { escapeKey, scrollLock, outsideClick } from '../../modalActions'
 
   type Props = {
     onSelect: (emoji: string) => void
@@ -35,20 +36,6 @@
   $effect(() => {
     const currentClient = client.peek()
     if (currentClient && currentClient.backend === 'misskey') void lazyLoadGlobal(currentClient.client)
-  })
-
-  $effect(() => {
-    function handleEscape(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  })
-
-  $effect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = prev }
   })
 
   const isLikeOnly = $derived(reactionAcceptance === 'likeOnly')
@@ -91,9 +78,14 @@
   role="dialog"
   aria-modal="true"
   aria-label={L.picker}
-  onclick={() => onClose()}
+  use:scrollLock
 >
-  <div class="emoji-picker-modal" role="presentation" onclick={(e) => e.stopPropagation()}>
+  <div
+    class="emoji-picker-modal"
+    role="presentation"
+    use:escapeKey={onClose}
+    use:outsideClick={onClose}
+  >
     <div class="emoji-picker-header">
       <input
         class="emoji-search"
