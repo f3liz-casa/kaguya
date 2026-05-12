@@ -5,24 +5,9 @@
   swap. Hosts LoadingBar + Toast + router branch + restoreSession()
   on mount.
 
-  Routing surface (mirror of KaguyaApp.tsx's AppContent):
-  - /miauth-callback                  → MiAuthCallbackPage (auth bypass)
-  - /oauth-callback*                  → OAuthCallbackPage (auth bypass)
-  - LoggedOut / LoginFailed           → LoginPage
-  - LoggingIn / LoggedIn → currentPath:
-      /                               → HomePage
-      /inbox                          → InboxPage
-      /timeline-inbox                 → TimelineInboxPage
-      /notifications                  → NotificationsPage
-      /performance                    → PerformancePage
-      /add-account                    → LoginPage
-      /settings                       → SettingsPage
-      /notes/:noteId/:host            → NotePage
-      /push/notes/:noteId             → push-redirect logic, then NotePage
-      /notes                          → Layout + 'app.select_note'
-      /push-manual                    → PushManualRegistrationPage
-      /@<acct>                        → UserPage (catch-all)
-      default                         → HomePage
+  Routing surface dispatches on the `Route` ADT from svelteRouter.ts.
+  Path → Route mapping lives in `parseRoute()`; this template only
+  switches on `route.kind` and forwards parsed params.
 -->
 
 <script lang="ts">
@@ -45,7 +30,7 @@
   import { authState, accounts, activeAccountId, instanceName } from './domain/auth/appState'
   import { restoreSession, switchAccount } from './domain/auth/authManager'
   import { currentLocale, t } from './infra/i18n'
-  import { currentPath, navigate } from './ui/svelteRouter'
+  import { currentPath, navigate, parseRoute, isAuthBypassRoute } from './ui/svelteRouter'
   import { svelteSignal } from './ui/svelteSignal.svelte'
 
   const pathR = svelteSignal(currentPath)
@@ -61,35 +46,15 @@
     void restoreSession()
   })
 
-  const path = $derived(pathR.value)
-
-  // Match note path: /notes/:noteId/:host
-  const noteRoute = $derived.by<{ noteId: string; host: string } | null>(() => {
-    const m = path.match(/^\/notes\/([^/]+)\/([^/]+)$/)
-    if (!m) return null
-    return { noteId: m[1], host: m[2] }
-  })
-
-  // Push notes redirect: /push/notes/:noteId
-  const pushNoteId = $derived.by<string | null>(() => {
-    const m = path.match(/^\/push\/notes\/([^/]+)$/)
-    return m ? m[1] : null
-  })
-
-  // Catch-all user path: /@username@host or /@username
-  const userRoute = $derived.by<{ username: string; host?: string } | null>(() => {
-    if (!path.startsWith('/@')) return null
-    const acct = path.slice(2)
-    const idx = acct.indexOf('@')
-    if (idx === -1) return { username: acct }
-    return { username: acct.slice(0, idx), host: acct.slice(idx + 1) }
-  })
+  const route = $derived(parseRoute(pathR.value))
+  const auth = $derived(authStateR.value)
+  const isLoggedIn = $derived(auth === 'LoggingIn' || auth === 'LoggedIn')
 
   // Push redirect side effect: read userId, find matching account, then
-  // navigate to /notes/:noteId/:host. Runs only while on /push/notes/:id.
+  // navigate to /notes/:noteId/:host. Runs only while route is PushNote.
   $effect(() => {
-    if (!pushNoteId) return
-    const nid = pushNoteId
+    if (route.kind !== 'PushNote') return
+    const nid = route.noteId
     const params = new URLSearchParams(window.location.search)
     const userId = params.get('userId') ?? undefined
     const accs = accountsR.value
@@ -109,50 +74,45 @@
     }
   })
 
-  const auth = $derived(authStateR.value)
-  const isCallback = $derived(path === '/miauth-callback' || path.startsWith('/oauth-callback'))
-  const isLoggedIn = $derived(auth === 'LoggingIn' || auth === 'LoggedIn')
-
   const selectNoteText = $derived((localeR.value, t('app.select_note')))
+  const loadingText = $derived((localeR.value, t('app.loading')))
 </script>
 
 <LoadingBar />
 <Toast />
 
-{#if path === '/miauth-callback'}
+{#if route.kind === 'MiAuthCallback'}
   <MiAuthCallbackPage />
-{:else if path.startsWith('/oauth-callback')}
+{:else if route.kind === 'OAuthCallback'}
   <OAuthCallbackPage />
-{:else if !isCallback && !isLoggedIn}
+{:else if !isAuthBypassRoute(route) && !isLoggedIn}
   <LoginPage />
-{:else if path === '/'}
+{:else if route.kind === 'Home' || route.kind === 'Unknown'}
   <HomePage />
-{:else if path === '/inbox'}
+{:else if route.kind === 'Inbox'}
   <InboxPage />
-{:else if path === '/timeline-inbox'}
+{:else if route.kind === 'TimelineInbox'}
   <TimelineInboxPage />
-{:else if path === '/notifications'}
+{:else if route.kind === 'Notifications'}
   <NotificationsPage />
-{:else if path === '/performance'}
+{:else if route.kind === 'Performance'}
   <PerformancePage />
-{:else if path === '/add-account'}
+{:else if route.kind === 'AddAccount'}
   <LoginPage />
-{:else if path === '/settings'}
+{:else if route.kind === 'Settings'}
   <SettingsPage />
-{:else if noteRoute}
-  <NotePage noteId={noteRoute.noteId} host={noteRoute.host} />
-{:else if pushNoteId}
+{:else if route.kind === 'Note'}
+  <NotePage noteId={route.noteId} host={route.host} />
+{:else if route.kind === 'PushNote'}
   <Layout>
-    <div class="loading-container"><p>{(localeR.value, t('app.loading'))}</p></div>
+    <div class="loading-container"><p>{loadingText}</p></div>
   </Layout>
-{:else if path === '/notes'}
+{:else if route.kind === 'NotesIndex'}
   <Layout>
     <div class="loading-container"><p>{selectNoteText}</p></div>
   </Layout>
-{:else if path === '/push-manual'}
+{:else if route.kind === 'PushManual'}
   <PushManualRegistrationPage />
-{:else if userRoute}
-  <UserPage username={userRoute.username} host={userRoute.host} />
-{:else}
-  <HomePage />
+{:else if route.kind === 'User'}
+  <UserPage username={route.username} host={route.host} />
 {/if}
