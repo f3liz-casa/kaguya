@@ -13,9 +13,13 @@
   import EmojiCode from './EmojiCode.svelte'
   import Link from '../Link.svelte'
   import Self from './SocialInline.svelte'
+  import { currentLocale, t } from '../../infra/i18n'
+  import { svelteSignal } from '../svelteSignal.svelte'
 
   type Props = { node: SocialInline; contextHost: string; priority: FetchPriority }
   let { node, contextHost, priority }: Props = $props()
+
+  const localeR = svelteSignal(currentLocale)
 </script>
 
 {#if node.type === 'text'}
@@ -49,7 +53,7 @@
 {:else if node.type === 'mention'}
   {@const mentionHost = node.host ?? contextHost}
   {@const display = mentionHost === contextHost ? `@${node.username}` : `@${node.username}@${mentionHost}`}
-  <Link href={`/@${node.username}@${mentionHost}`} class="mfm-mention" aria-label={`Mention: ${display}`}>{display}</Link>
+  <Link href={`/@${node.username}@${mentionHost}`} class="mfm-mention" aria-label={(localeR.value, t('aria.mention_to', { handle: display }))}>{display}</Link>
 {:else if node.type === 'hashtag'}
   <a href={`/tags/${node.tag}`} class="mfm-hashtag">#{node.tag}</a>
 {:else if node.type === 'emoji'}

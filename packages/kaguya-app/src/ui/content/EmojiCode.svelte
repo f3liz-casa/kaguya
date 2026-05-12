@@ -13,10 +13,13 @@
   import { proxyUrl } from '../../infra/mediaProxy'
   import type { FetchPriority } from '../../infra/fetchQueue'
   import EmojiImg from './EmojiImg.svelte'
+  import { currentLocale, t } from '../../infra/i18n'
+  import { svelteSignal } from '../svelteSignal.svelte'
 
   type Props = { name: string; priority: FetchPriority }
   let { name, priority }: Props = $props()
 
+  const localeR = svelteSignal(currentLocale)
   const emoji = $derived(getEmoji(name))
 
   $effect(() => {
@@ -29,5 +32,5 @@
 {#if emoji}
   <EmojiImg url={proxyUrl(emoji.url)} {name} {priority} />
 {:else}
-  <span class="mfm-emoji-code" aria-label={`${name} emoji`}><span aria-hidden="true">:{name}:</span></span>
+  <span class="mfm-emoji-code" aria-label={(localeR.value, t('aria.emoji_name', { name }))}><span aria-hidden="true">:{name}:</span></span>
 {/if}
