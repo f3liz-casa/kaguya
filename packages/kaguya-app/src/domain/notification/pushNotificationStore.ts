@@ -14,7 +14,7 @@
 //   4. User copies AiScript → runs in Misskey Scratchpad → sw/register called
 //   5. User confirms → state becomes Subscribed
 
-import { signal } from '@preact/signals'
+import { signal } from '@preact/signals-core'
 import type { MisskeyClient } from '../../lib/misskey'
 import type { BackendClient } from '../../lib/backend'
 import type { Result } from '../../infra/result'

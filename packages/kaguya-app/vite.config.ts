@@ -5,7 +5,7 @@ import fs from 'fs'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 import { defineConfig } from 'vite'
-import preact from '@preact/preset-vite'
+import { svelte } from '@sveltejs/vite-plugin-svelte'
 import UnoCSS from 'unocss/vite'
 import { serwist } from '@serwist/vite'
 
@@ -26,12 +26,7 @@ export default defineConfig({
   },
   plugins: [
     UnoCSS(),
-    preact({
-      prerender: {
-        enabled: false,
-        renderTarget: '#root',
-      },
-    }),
+    svelte(),
     serwist({
       swSrc: 'src/sw.ts',
       swDest: 'sw.js',
@@ -115,7 +110,7 @@ export default defineConfig({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('preact')) return 'vendor-preact'
+            if (id.includes('svelte')) return 'vendor-svelte'
             if (id.includes('unocss')) return 'vendor-unocss'
             if (id.includes('@picocss')) return 'vendor-pico'
             return 'vendor'

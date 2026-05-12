@@ -37,7 +37,7 @@
     <link rel="preload" href="/src/styles/theme.css" as="style" />
     
     <!-- Modulepreload for main JavaScript -->
-    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="modulepreload" href="/src/main.ts" />
 
     <!-- Iconify (Tabler icons) -->
     <!-- Iconify icons are bundled via src/icons.ts -->
@@ -64,8 +64,7 @@
     </div>
     <!-- Progress bar: visible from first HTML paint, removed by LoadingBar on mount -->
     <div id="initial-bar" class="page-loading-bar page-loading-bar--active"></div>
-    <!-- #root content is baked by the prerender pass; empty here is fine -->
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx" prerender></script>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

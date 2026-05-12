@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { signal, batch } from '@preact/signals'
+import { signal, batch } from '@preact/signals-core'
 import type { Result } from '../../infra/result'
 
 export const antennas = signal<unknown[]>([])
