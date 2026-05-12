@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { useState, useEffect } from 'preact/hooks'
+import { useState, useEffect, useRef } from 'preact/hooks'
 import { Link, useLocation } from './router'
 import type { ComponentChildren } from 'preact'
 import { instanceName } from '../domain/auth/appState'
@@ -23,6 +23,7 @@ export function Layout({ children }: Props) {
   const inboxUnread = inboxCount.value
   const [location, navigate] = useLocation()
   const [showCompose, setShowCompose] = useState(false)
+  const composeModalRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     i18nInit()
@@ -32,6 +33,50 @@ export function Layout({ children }: Props) {
     initInbox()
     initFilteredTimeline()
   }, [])
+
+  useEffect(() => {
+    if (!showCompose) return
+    const modal: HTMLDivElement | null = composeModalRef.current
+    if (!modal) return
+    const prevFocus = document.activeElement as HTMLElement | null
+
+    const focusables = () => Array.from(modal.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(el => el.offsetParent !== null || el === document.activeElement)
+
+    const initialList = focusables()
+    const initial = initialList.find(el => el.tagName === 'TEXTAREA') ?? initialList[0]
+    initial?.focus()
+
+    function onKey(e: KeyboardEvent) {
+      if (!modal) return
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        setShowCompose(false)
+        return
+      }
+      if (e.key !== 'Tab') return
+      const list = focusables()
+      if (list.length === 0) return
+      const first = list[0]
+      const last = list[list.length - 1]
+      const active = document.activeElement as HTMLElement | null
+      const insideModal = active != null && modal.contains(active)
+      if (e.shiftKey && (active === first || !insideModal)) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && (active === last || !insideModal)) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      prevFocus?.focus()
+    }
+  }, [showCompose])
 
   // Subscribe to signals for re-rendering
   const _theme = currentTheme.value
@@ -181,9 +226,15 @@ export function Layout({ children }: Props) {
 
       {showCompose && (
         <div class="compose-overlay" onClick={e => { if (e.target === e.currentTarget) setShowCompose(false) }}>
-          <div class="compose-modal">
+          <div
+            class="compose-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="compose-modal-title"
+            ref={composeModalRef}
+          >
             <div class="compose-modal-header">
-              <span class="compose-modal-title">{t('compose.title')}</span>
+              <span id="compose-modal-title" class="compose-modal-title">{t('compose.title')}</span>
               <button type="button" class="compose-close-btn" onClick={() => setShowCompose(false)} aria-label={t('action.close')}>
                 <iconify-icon icon="tabler:x" />
               </button>

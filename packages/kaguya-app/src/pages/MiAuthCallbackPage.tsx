@@ -31,7 +31,7 @@ export function MiAuthCallbackPage() {
           const err = result.error
           const errorMsg = loginErrorMessage(err)
 
-          const isPermanent = errorMsg.includes('Session information not found') || errorMsg.includes('セッション')
+          const isPermanent = err.type === 'SessionExpired'
 
           if (isPermanent) {
             if (isMounted) { setStatus('permanent_error'); setErrorMessage(errorMsg) }
@@ -50,6 +50,10 @@ export function MiAuthCallbackPage() {
         }
       } catch (e) {
         console.error('MiAuthCallbackPage: Exception', e)
+        if (isMounted) {
+          setStatus('error')
+          setErrorMessage(e instanceof Error ? e.message : t('error.unknown'))
+        }
       }
     })()
 

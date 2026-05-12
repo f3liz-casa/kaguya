@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-export const ja: Record<string, string> = {
+export const ja = {
   // App
   'app.title': 'かぐや',
   'app.tagline': 'かぐや — やさしい Misskey クライアント',
@@ -317,4 +317,6 @@ export const ja: Record<string, string> = {
 
   // Generic
   'generic.error_prefix': 'エラー',
-}
+} as const satisfies Record<string, string>
+
+export type I18nKey = keyof typeof ja

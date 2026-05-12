@@ -6,6 +6,7 @@ export type LoginError =
   | { type: 'InvalidCredentials' }
   | { type: 'NetworkError'; message: string }
   | { type: 'UnknownError'; message: string }
+  | { type: 'SessionExpired' }
 
 export type AuthState =
   | 'LoggedOut'
@@ -20,5 +21,6 @@ export function loginErrorMessage(err: LoginError): string {
     case 'InvalidCredentials': return t('error.invalid_credentials')
     case 'NetworkError': return t('error.network')
     case 'UnknownError': return t('error.unknown')
+    case 'SessionExpired': return t('auth.session_expired')
   }
 }
