@@ -49,7 +49,7 @@
 {:else if node.type === 'mention'}
   {@const mentionHost = node.host ?? contextHost}
   {@const display = mentionHost === contextHost ? `@${node.username}` : `@${node.username}@${mentionHost}`}
-  <Link href={`/@${node.username}@${mentionHost}`} class="mfm-mention">{display}</Link>
+  <Link href={`/@${node.username}@${mentionHost}`} class="mfm-mention" aria-label={`Mention: ${display}`}>{display}</Link>
 {:else if node.type === 'hashtag'}
   <a href={`/tags/${node.tag}`} class="mfm-hashtag">#{node.tag}</a>
 {:else if node.type === 'emoji'}

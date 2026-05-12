@@ -14,10 +14,11 @@
   type Props = {
     href: string
     class?: string
+    'aria-label'?: string
     children: Snippet
     onclick?: (e: MouseEvent) => void
   }
-  let { href, class: className, children, onclick }: Props = $props()
+  let { href, class: className, 'aria-label': ariaLabel, children, onclick }: Props = $props()
 
   function handle(e: MouseEvent) {
     const modified = e.ctrlKey || e.metaKey || e.altKey || e.shiftKey
@@ -29,6 +30,6 @@
   }
 </script>
 
-<a {href} class={className} onclick={handle}>
+<a {href} class={className} aria-label={ariaLabel} onclick={handle}>
   {@render children()}
 </a>
