@@ -7,15 +7,15 @@
 -->
 
 <script lang="ts">
-  import type { ReactionAcceptance } from '../../infra/sharedTypes'
-  import { client, isLoggedIn, isReadOnlyMode } from '../auth/appState'
-  import * as Backend from '../../lib/backend'
-  import { showSuccess, showError } from '../../ui/toastState'
+  import type { ReactionAcceptance } from '../../../infra/sharedTypes'
+  import { client, isLoggedIn, isReadOnlyMode } from '../../../domain/auth/appState'
+  import * as Backend from '../../../lib/backend'
+  import { showSuccess, showError } from '../../toastState'
   import EmojiPicker from '../emoji/EmojiPicker.svelte'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { defaultRenoteVisibility } from '../../ui/preferencesStore'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
-  import { navigate } from '../../ui/svelteRouter'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { defaultRenoteVisibility } from '../../preferencesStore'
+  import { svelteSignal } from '../../svelteSignal.svelte'
+  import { navigate } from '../../svelteRouter'
 
   type Props = {
     noteId: string

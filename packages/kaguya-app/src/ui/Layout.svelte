@@ -29,7 +29,7 @@
   } from './preferencesStore'
   import { init as mediaProxyInit } from '../infra/mediaProxy'
   import { init as i18nInit, t, currentLocale } from '../infra/i18n'
-  import AccountSwitcher from '../domain/account/AccountSwitcher.svelte'
+  import AccountSwitcher from './feature/account/AccountSwitcher.svelte'
   import PostForm from './PostForm.svelte'
   import { svelteSignal } from './svelteSignal.svelte'
   import { focusTrap } from './focusTrap'

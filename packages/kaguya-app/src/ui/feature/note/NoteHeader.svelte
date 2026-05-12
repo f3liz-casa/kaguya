@@ -6,13 +6,13 @@
 -->
 
 <script lang="ts">
-  import Link from '../../ui/Link.svelte'
-  import type { UserView } from '../user/userView'
-  import { formatRelativeTime } from '../../infra/timeFormat'
-  import { instanceName } from '../auth/appState'
-  import ContentRenderer from '../../ui/content/ContentRenderer.svelte'
-  import { proxyAvatarUrl } from '../../infra/mediaProxy'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import Link from '../../Link.svelte'
+  import type { UserView } from '../../../domain/user/userView'
+  import { formatRelativeTime } from '../../../infra/timeFormat'
+  import { instanceName } from '../../../domain/auth/appState'
+  import ContentRenderer from '../../content/ContentRenderer.svelte'
+  import { proxyAvatarUrl } from '../../../infra/mediaProxy'
+  import { svelteSignal } from '../../svelteSignal.svelte'
 
   type Props = {
     user: UserView

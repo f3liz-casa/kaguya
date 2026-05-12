@@ -10,11 +10,11 @@
 -->
 
 <script lang="ts">
-  import type { FileView } from '../file/fileView'
-  import { isImage } from '../file/fileView'
+  import type { FileView } from '../../../domain/file/fileView'
+  import { isImage } from '../../../domain/file/fileView'
   import ImageAttachment from './ImageAttachment.svelte'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { svelteSignal } from '../../svelteSignal.svelte'
 
   const maxVisibleImages = 2
 

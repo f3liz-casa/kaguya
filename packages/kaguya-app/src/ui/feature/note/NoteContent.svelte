@@ -6,11 +6,11 @@
 -->
 
 <script lang="ts">
-  import type { NoteView } from './noteView'
-  import ContentRenderer from '../../ui/content/ContentRenderer.svelte'
+  import type { NoteView } from '../../../domain/note/noteView'
+  import ContentRenderer from '../../content/ContentRenderer.svelte'
   import NotePoll from './NotePoll.svelte'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { svelteSignal } from '../../svelteSignal.svelte'
 
   type Props = {
     note: NoteView

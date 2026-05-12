@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import Layout from '../ui/Layout.svelte'
-  import AccountSwitcher from '../domain/account/AccountSwitcher.svelte'
+  import AccountSwitcher from '../ui/feature/account/AccountSwitcher.svelte'
   import PushNotificationToggle from '../ui/PushNotificationToggle.svelte'
   import { currentTheme, setTheme } from '../ui/themeStore'
   import type { Theme } from '../ui/themeStore'

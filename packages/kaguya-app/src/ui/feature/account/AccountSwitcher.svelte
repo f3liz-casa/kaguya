@@ -6,16 +6,16 @@
 -->
 
 <script lang="ts">
-  import { accounts, activeAccountId, isReadOnlyMode, getCurrentUserName } from '../auth/appState'
-  import { removeAccount } from './accountManager'
-  import { logout, switchAccount } from '../auth/authService'
-  import { displayLabel } from './account'
-  import ContentRenderer from '../../ui/content/ContentRenderer.svelte'
-  import PushNotificationToggle from '../../ui/PushNotificationToggle.svelte'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { proxyAvatarUrl } from '../../infra/mediaProxy'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
-  import { navigate } from '../../ui/svelteRouter'
+  import { accounts, activeAccountId, isReadOnlyMode, getCurrentUserName } from '../../../domain/auth/appState'
+  import { removeAccount } from '../../../domain/account/accountManager'
+  import { logout, switchAccount } from '../../../domain/auth/authService'
+  import { displayLabel } from '../../../domain/account/account'
+  import ContentRenderer from '../../content/ContentRenderer.svelte'
+  import PushNotificationToggle from '../../PushNotificationToggle.svelte'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { proxyAvatarUrl } from '../../../infra/mediaProxy'
+  import { svelteSignal } from '../../svelteSignal.svelte'
+  import { navigate } from '../../svelteRouter'
 
   const accountsR = svelteSignal(accounts)
   const activeIdR = svelteSignal(activeAccountId)

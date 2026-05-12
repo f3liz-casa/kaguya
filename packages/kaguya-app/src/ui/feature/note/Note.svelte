@@ -15,8 +15,8 @@
 -->
 
 <script lang="ts">
-  import type { NoteView } from './noteView'
-  import { decode } from './noteDecoder'
+  import type { NoteView } from '../../../domain/note/noteView'
+  import { decode } from '../../../domain/note/noteDecoder'
   import NoteCard from './NoteCard.svelte'
 
   type Props =

@@ -7,8 +7,8 @@
 -->
 
 <script lang="ts">
-  import { currentLocale, t } from '../../infra/i18n'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { svelteSignal } from '../../svelteSignal.svelte'
 
   type Props = { url: string; name: string; onClose: () => void }
   let { url, name, onClose }: Props = $props()

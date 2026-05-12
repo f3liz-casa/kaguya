@@ -22,7 +22,7 @@
   import { showError } from './toastState'
   import { currentLocale, t } from '../infra/i18n'
   import ReactionButton from './ReactionButton.svelte'
-  import EmojiPicker from '../domain/emoji/EmojiPicker.svelte'
+  import EmojiPicker from './feature/emoji/EmojiPicker.svelte'
   import { svelteSignal } from './svelteSignal.svelte'
 
   type Props = {

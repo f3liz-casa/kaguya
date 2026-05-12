@@ -13,7 +13,7 @@
 
 <script lang="ts">
   import Layout from '../ui/Layout.svelte'
-  import Note from '../domain/note/Note.svelte'
+  import Note from '../ui/feature/note/Note.svelte'
   import ContentRenderer from '../ui/content/ContentRenderer.svelte'
   import { client, isLoggedIn, isReadOnlyMode, currentUser } from '../domain/auth/appState'
   import { decode as decodeProfile, displayName as profileDisplayName, fullUsername } from '../domain/user/userProfileView'

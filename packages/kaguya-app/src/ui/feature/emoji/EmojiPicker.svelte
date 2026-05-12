@@ -7,12 +7,12 @@
 -->
 
 <script lang="ts">
-  import type { ReactionAcceptance } from '../../infra/sharedTypes'
-  import { getAllEmojis, getCategories, lazyLoadGlobal } from './emojiStore'
-  import { client } from '../auth/appState'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { proxyUrl } from '../../infra/mediaProxy'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import type { ReactionAcceptance } from '../../../infra/sharedTypes'
+  import { getAllEmojis, getCategories, lazyLoadGlobal } from '../../../domain/emoji/emojiStore'
+  import { client } from '../../../domain/auth/appState'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { proxyUrl } from '../../../infra/mediaProxy'
+  import { svelteSignal } from '../../svelteSignal.svelte'
 
   type Props = {
     onSelect: (emoji: string) => void

@@ -8,7 +8,7 @@
 
 <script lang="ts">
   import Layout from '../ui/Layout.svelte'
-  import HomePageTimeline from '../domain/timeline/HomePageTimeline.svelte'
+  import HomePageTimeline from '../ui/feature/timeline/HomePageTimeline.svelte'
 </script>
 
 <Layout>

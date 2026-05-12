@@ -12,22 +12,22 @@
 -->
 
 <script lang="ts">
-  import type { NoteView } from './noteView'
-  import { isPureRenote, hasContentWarning } from './noteView'
-  import type { UserView } from '../user/userView'
-  import { instanceName } from '../auth/appState'
+  import type { NoteView } from '../../../domain/note/noteView'
+  import { isPureRenote, hasContentWarning } from '../../../domain/note/noteView'
+  import type { UserView } from '../../../domain/user/userView'
+  import { instanceName } from '../../../domain/auth/appState'
   import NoteHeader from './NoteHeader.svelte'
   import NoteContent from './NoteContent.svelte'
   import NoteActions from './NoteActions.svelte'
   import ImageGallery from './ImageGallery.svelte'
-  import ReactionBar from '../../ui/ReactionBar.svelte'
-  import ContentRenderer from '../../ui/content/ContentRenderer.svelte'
-  import Link from '../../ui/Link.svelte'
-  import { proxyAvatarUrl } from '../../infra/mediaProxy'
-  import { formatRelativeTime } from '../../infra/timeFormat'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
-  import { navigate } from '../../ui/svelteRouter'
+  import ReactionBar from '../../ReactionBar.svelte'
+  import ContentRenderer from '../../content/ContentRenderer.svelte'
+  import Link from '../../Link.svelte'
+  import { proxyAvatarUrl } from '../../../infra/mediaProxy'
+  import { formatRelativeTime } from '../../../infra/timeFormat'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { svelteSignal } from '../../svelteSignal.svelte'
+  import { navigate } from '../../svelteRouter'
 
   type Props = { note: NoteView; noteHost?: string }
   let { note, noteHost }: Props = $props()

@@ -7,12 +7,12 @@
 -->
 
 <script lang="ts">
-  import type { FileView } from '../file/fileView'
-  import { isImage } from '../file/fileView'
+  import type { FileView } from '../../../domain/file/fileView'
+  import { isImage } from '../../../domain/file/fileView'
   import ImageLightbox from './ImageLightbox.svelte'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { proxyUrl } from '../../infra/mediaProxy'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { proxyUrl } from '../../../infra/mediaProxy'
+  import { svelteSignal } from '../../svelteSignal.svelte'
 
   type Props = { file: FileView }
   let { file }: Props = $props()

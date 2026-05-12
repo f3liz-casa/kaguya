@@ -7,12 +7,12 @@
 -->
 
 <script lang="ts">
-  import type { PollView } from './noteView'
-  import { client, isLoggedIn, isReadOnlyMode } from '../auth/appState'
-  import * as Backend from '../../lib/backend'
-  import { showError } from '../../ui/toastState'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import type { PollView } from '../../../domain/note/noteView'
+  import { client, isLoggedIn, isReadOnlyMode } from '../../../domain/auth/appState'
+  import * as Backend from '../../../lib/backend'
+  import { showError } from '../../toastState'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { svelteSignal } from '../../svelteSignal.svelte'
 
   type Props = { noteId: string; poll: PollView }
   let { noteId, poll }: Props = $props()
