@@ -251,6 +251,7 @@ export const ja = {
   'user.unfollow_failed': 'フォロー解除できませんでした',
   'user.followed': 'フォローしました',
   'user.unfollowed': 'フォロー解除しました',
+  'user.bot_badge': 'Bot',
 
   // Poll
   'poll.votes': '票',
@@ -289,6 +290,9 @@ export const ja = {
   // Image gallery
   'image.gallery_single': '画像',
   'image.gallery_count': '枚の画像',
+
+  // MFM
+  'mfm.search_button': '検索',
 
   // User filter
   'user_filter.button': 'ユーザーフィルター',

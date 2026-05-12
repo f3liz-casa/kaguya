@@ -253,6 +253,7 @@ export const en: Record<keyof typeof ja, string> = {
   'user.unfollow_failed': 'Could not unfollow',
   'user.followed': 'Followed',
   'user.unfollowed': 'Unfollowed',
+  'user.bot_badge': 'Bot',
 
   // Poll
   'poll.votes': ' votes',
@@ -291,6 +292,9 @@ export const en: Record<keyof typeof ja, string> = {
   // Image gallery
   'image.gallery_single': 'Image',
   'image.gallery_count': ' images',
+
+  // MFM
+  'mfm.search_button': 'Search',
 
   // User filter
   'user_filter.button': 'User filter',

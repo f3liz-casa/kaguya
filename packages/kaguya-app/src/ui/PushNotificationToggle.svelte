@@ -71,7 +71,7 @@
     <button class="push-notification-toggle" type="button" onclick={handleEnable}>🔕 {L.enable}</button>
   {:else if typeof s === 'object' && s.tag === 'Error'}
     <button class="push-notification-toggle" type="button" onclick={handleEnable}>
-      ⚠️ {s.message.includes('reload') ? L.reloadRetry : L.enable}
+      ⚠️ {s.kind === 'NeedsReload' ? L.reloadRetry : L.enable}
     </button>
   {:else if typeof s === 'object' && s.tag === 'AwaitingScript'}
     {@const script = s.script}

@@ -148,7 +148,7 @@
 <div class="layout">
   <nav class="left-sidebar" aria-label={L.sideNav}>
     <Link href="/" class="sidebar-logo">
-      <div class="sidebar-logo-icon">🌿</div>
+      <div class="sidebar-logo-icon" aria-hidden="true">🌿</div>
     </Link>
     <div class="sidebar-nav-items">
       <button
@@ -228,7 +228,7 @@
               </button>
             {/if}
             <Link href="/" class="header-logo-link" onclick={() => { if (location === '/') scrollMainToTop() }}>
-              <span class="header-leaf-icon">🌿</span>
+              <span class="header-leaf-icon" aria-hidden="true">🌿</span>
             </Link>
             <strong class="app-title">{L.appTitle}</strong>
             {#if instName}
@@ -250,8 +250,9 @@
             <Link
               href="/notifications"
               class="notification-bell header-nav-link {isActive('/notifications') ? 'active' : ''}"
+              aria-label={L.notifications}
             >
-              🔔
+              <span aria-hidden="true">🔔</span>
               {#if notifCount > 0}
                 <span class="notification-badge">{notifCount > 99 ? '99+' : notifCount}</span>
               {/if}

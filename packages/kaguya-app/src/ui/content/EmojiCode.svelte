@@ -29,5 +29,5 @@
 {#if emoji}
   <EmojiImg url={proxyUrl(emoji.url)} {name} {priority} />
 {:else}
-  <span class="mfm-emoji-code">:{name}:</span>
+  <span class="mfm-emoji-code" aria-label={`${name} emoji`}><span aria-hidden="true">:{name}:</span></span>
 {/if}
