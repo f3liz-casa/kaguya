@@ -11,7 +11,7 @@
   import type { NoteView } from '../domain/note/noteView'
   import type { TimelineType } from '../lib/backend'
   import { instanceName } from '../domain/auth/appState'
-  import Note from '../domain/note/Note.svelte'
+  import Note from '../ui/feature/note/Note.svelte'
   import { shouldShowNote, userFilters } from '../domain/user/userFilterStore'
   import { currentLocale, t } from '../infra/i18n'
   import { svelteSignal } from '../ui/svelteSignal.svelte'

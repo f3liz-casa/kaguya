@@ -12,7 +12,7 @@
 -->
 
 <script lang="ts" module>
-  import type { TimelineType } from '../../lib/backend'
+  import type { TimelineType } from '../../../lib/backend'
 
   export type TimelineItem = {
     type_: TimelineType
@@ -39,20 +39,20 @@
 </script>
 
 <script lang="ts">
-  import type { BackendSubscription } from '../../lib/backend'
-  import * as Backend from '../../lib/backend'
-  import { client, authState } from '../auth/appState'
-  import { homeTimelineInitial } from './timelineStore'
-  import { decode as decodeNote, decodeManyFromJson } from '../note/noteDecoder'
-  import { prefetchNoteImages } from '../note/noteOps'
-  import type { NoteView } from '../note/noteView'
-  import { isNsfw } from '../note/noteView'
+  import type { BackendSubscription } from '../../../lib/backend'
+  import * as Backend from '../../../lib/backend'
+  import { client, authState } from '../../../domain/auth/appState'
+  import { homeTimelineInitial } from '../../../domain/timeline/timelineStore'
+  import { decode as decodeNote, decodeManyFromJson } from '../../../domain/note/noteDecoder'
+  import { prefetchNoteImages } from '../../../domain/note/noteOps'
+  import type { NoteView } from '../../../domain/note/noteView'
+  import { isNsfw } from '../../../domain/note/noteView'
   import Note from '../note/Note.svelte'
-  import { isQuiet as isQuietSignal, streamingEnabled, hideNsfw } from '../../ui/preferencesStore'
-  import { shouldShowNote, userFilters } from '../user/userFilterStore'
-  import { filterConfig, passesFilter, loadCachedNotes, saveCachedNotes } from './filteredTimelineStore'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import { isQuiet as isQuietSignal, streamingEnabled, hideNsfw } from '../../preferencesStore'
+  import { shouldShowNote, userFilters } from '../../../domain/user/userFilterStore'
+  import { filterConfig, passesFilter, loadCachedNotes, saveCachedNotes } from '../../../domain/timeline/filteredTimelineStore'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { svelteSignal } from '../../svelteSignal.svelte'
 
   type TimelineState =
     | { tag: 'Loading' }

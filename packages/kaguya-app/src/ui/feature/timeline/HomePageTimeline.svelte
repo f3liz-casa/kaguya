@@ -8,11 +8,11 @@
 -->
 
 <script lang="ts">
-  import { client } from '../auth/appState'
-  import { antennas, lists, channels, feeds } from './timelineStore'
-  import { CustomTimelines } from '../../lib/misskey'
-  import { currentLocale, t } from '../../infra/i18n'
-  import { svelteSignal } from '../../ui/svelteSignal.svelte'
+  import { client } from '../../../domain/auth/appState'
+  import { antennas, lists, channels, feeds } from '../../../domain/timeline/timelineStore'
+  import { CustomTimelines } from '../../../lib/misskey'
+  import { currentLocale, t } from '../../../infra/i18n'
+  import { svelteSignal } from '../../svelteSignal.svelte'
   import Timeline, { type TimelineItem, getItemDisplayName } from './Timeline.svelte'
 
   const clientR = svelteSignal(client)

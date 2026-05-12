@@ -8,7 +8,7 @@
 
 <script lang="ts">
   import Layout from '../ui/Layout.svelte'
-  import Note from '../domain/note/Note.svelte'
+  import Note from '../ui/feature/note/Note.svelte'
   import PostForm from '../ui/PostForm.svelte'
   import { client, authState, instanceName } from '../domain/auth/appState'
   import { decode as decodeNote, decodeManyFromJson } from '../domain/note/noteDecoder'
