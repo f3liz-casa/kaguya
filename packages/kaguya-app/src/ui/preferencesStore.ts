@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { signal, computed, effect } from '@preact/signals'
+import { signal, computed, effect } from '@preact/signals-core'
 import {
   keyFontSize,
   keyReduceMotion,

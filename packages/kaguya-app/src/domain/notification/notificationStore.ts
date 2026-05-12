@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { signal, batch, computed } from '@preact/signals'
+import { signal, batch, computed } from '@preact/signals-core'
 import type { NotificationView } from './notificationView'
 import { decode } from './notificationView'
 import type { MisskeyClient } from '../../lib/misskey'

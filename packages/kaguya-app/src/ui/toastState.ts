@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { signal } from '@preact/signals'
+import { signal } from '@preact/signals-core'
 
 export type ToastType = 'error' | 'warning' | 'info' | 'success'
 

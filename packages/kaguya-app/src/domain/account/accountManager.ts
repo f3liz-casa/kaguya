@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { batch } from '@preact/signals'
+import { batch } from '@preact/signals-core'
 import { accounts, activeAccountId } from '../auth/appState'
 import type { Account } from './account'
 import { serializeAccounts } from './account'

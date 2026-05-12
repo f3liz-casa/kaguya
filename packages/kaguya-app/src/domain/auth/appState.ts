@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { signal, computed } from '@preact/signals'
+import { signal, computed } from '@preact/signals-core'
 import type { AuthState, PermissionMode } from './authTypes'
 import type { Account } from '../account/account'
 import type { BackendClient } from '../../lib/backend'

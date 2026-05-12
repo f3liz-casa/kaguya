@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { batch } from '@preact/signals'
+import { batch } from '@preact/signals-core'
 import type { LoginError } from './authTypes'
 import {
   instanceOrigin, accessToken, authState, client, currentUser,

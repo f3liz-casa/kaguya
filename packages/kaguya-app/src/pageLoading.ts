@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // Global page-loading counter that drives the top progress bar.
 
-import { signal, computed } from '@preact/signals'
+import { signal, computed } from '@preact/signals-core'
 
 const _count = signal(0)
 

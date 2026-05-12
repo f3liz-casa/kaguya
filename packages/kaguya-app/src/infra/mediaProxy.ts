@@ -8,7 +8,7 @@
 //   - For emoji:  /proxy/image.webp?url=...
 //   - For avatar: already proxied by Misskey API as /proxy/avatar.webp?url=...
 
-import { signal } from '@preact/signals'
+import { signal } from '@preact/signals-core'
 import { instanceOrigin } from '../domain/auth/appState'
 import { keyMediaProxy } from './storage'
 

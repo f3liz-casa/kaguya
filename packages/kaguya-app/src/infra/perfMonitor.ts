@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { signal, computed } from '@preact/signals'
-import { useRef, useEffect } from 'preact/hooks'
+import { signal, computed } from '@preact/signals-core'
 
 export type ApiCall = { endpoint: string; duration: number; timestamp: number; success: boolean }
 export type RenderMetric = { component: string; duration: number; timestamp: number }
@@ -53,14 +52,6 @@ export async function measureApiCall<T>(endpoint: string, fn: () => Promise<T>):
     trackApiCall(endpoint, Date.now() - start, false)
     throw e
   }
-}
-
-export function useRenderMetrics(component: string): void {
-  const startRef = useRef(Date.now())
-  useEffect(() => {
-    trackRender(component, Date.now() - startRef.current)
-    startRef.current = Date.now()
-  })
 }
 
 export type MemoryInfo = { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number }

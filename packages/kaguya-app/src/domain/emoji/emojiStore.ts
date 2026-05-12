@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
-import { signal, computed } from '@preact/signals'
-import { batch } from '@preact/signals'
+import { signal, computed } from '@preact/signals-core'
+import { batch } from '@preact/signals-core'
 import type { Emoji, EmojiMap, LoadState } from './emojiTypes'
 import type { MisskeyClient } from '../../lib/misskey'
 import { Emojis, origin as misskeyOrigin } from '../../lib/misskey'
