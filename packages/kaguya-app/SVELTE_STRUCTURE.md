@@ -59,14 +59,18 @@ const userName = $derived(authStateR.value.type === 'LoggedIn' ? authStateR.valu
 - `LoadingBar.svelte` — page transition indicator
 - `Toast.svelte` — toast overlay（severity 別 icon + close button、aria-live polite）
 
-### Interactive Primitive
+### Interactive Primitive (`ui/` 直下)
 - `Link.svelte` — SPA navigation 統合
 - `ReactionBar.svelte` / `ReactionButton.svelte` — emoji reaction UI（optimistic + race guard）
 - `PostForm.svelte` + `Composer` class（`postFormFactory.svelte.ts`）— note composition、attachment 4 個 cap + paste/picker 両 path
-- `EmojiPicker.svelte` — emoji selector dropdown
 - `PushNotificationToggle.svelte` — permission + subscription control
-- `AccountSwitcher.svelte` — account switch popup
-- `ImageAttachment.svelte` / `ImageGallery.svelte` / `ImageLightbox.svelte` — image display + sensitive flag + zoom modal
+
+### domain/ 配下の .svelte（13 file、A 移動対象）
+- `domain/account/AccountSwitcher.svelte` — account switch popup
+- `domain/emoji/EmojiPicker.svelte` — emoji selector dropdown
+- `domain/note/{ImageAttachment, ImageGallery, ImageLightbox}.svelte` — image display + sensitive flag + zoom modal
+- `domain/note/{Note, NoteCard, NoteHeader, NoteContent, NoteActions, NotePoll}.svelte` — note render chain
+- `domain/timeline/{Timeline, HomePageTimeline}.svelte` — timeline streaming + filter cache
 
 ### Content Renderer Pipeline (`ui/content/`)
 - `emojiHelpers.ts` — toTwemojiUrl / hasJapanese / hasKorean（TS only、framework-agnostic）
