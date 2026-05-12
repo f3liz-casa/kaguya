@@ -2,17 +2,24 @@
 
 import { signal } from '@preact/signals-core'
 import { keyLocale } from './storage'
-import { ja } from './locales/ja'
+import { ja, type I18nKey } from './locales/ja'
 import { en } from './locales/en'
 
 export type Locale = 'ja' | 'en'
+export type { I18nKey }
+export type I18nParams = Record<string, string | number>
 
-const locales: Record<Locale, Record<string, string>> = { ja, en }
+const locales: Record<Locale, Record<I18nKey, string>> = { ja, en }
 
 export const currentLocale = signal<Locale>('ja')
 
-export function t(key: string): string {
-  return locales[currentLocale.value][key] ?? locales['ja'][key] ?? key
+// Narrowed `key` ensures callers can only reference dict-resident
+// entries. Optional `params` interpolates `{name}` placeholders in
+// the resolved string — unknown placeholders are left as-is.
+export function t(key: I18nKey, params?: I18nParams): string {
+  const raw = locales[currentLocale.value][key] ?? locales.ja[key] ?? key
+  if (!params) return raw
+  return raw.replace(/\{(\w+)\}/g, (m, k) => (k in params ? String(params[k]) : m))
 }
 
 export function init(): void {
