@@ -4,11 +4,12 @@
   Svelte port of Layout.tsx. Not yet mounted at runtime —
   Layout.tsx remains the live root layout until M1 mount swap.
 
-  Compose-modal a11y (mio's pin):
-  1. focus trap via `use:focusTrap` action (src/ui/focusTrap.ts)
-  2. ESC key close: window keydown listener inside $effect
-  3. role="dialog" aria-modal="true" aria-labelledby on modal root
-  4. scroll lock: document.body.style.overflow = 'hidden' while open
+  Compose-modal a11y: all four behaviors come from `ui/modalActions`:
+    use:focusTrap          Tab cycle + initial focus + prev-focus restore
+    use:escapeKey          ESC dismisses
+    use:scrollLock         body scroll locked while open
+    use:outsideClick       click outside modal dismisses
+  role/aria-modal/aria-labelledby stay on the modal root.
 -->
 
 <script lang="ts">
@@ -32,7 +33,7 @@
   import AccountSwitcher from './feature/account/AccountSwitcher.svelte'
   import PostForm from './PostForm.svelte'
   import { svelteSignal } from './svelteSignal.svelte'
-  import { focusTrap } from './focusTrap'
+  import { focusTrap, escapeKey, scrollLock, outsideClick } from './modalActions'
   import { onMount } from 'svelte'
 
   type Props = { children: Snippet }
@@ -122,26 +123,8 @@
     themeToDark: t('theme.switch_to_dark'),
   }))
 
-  // ESC close + body scroll lock for compose modal.
-  $effect(() => {
-    if (!showCompose) return
-    const prevOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        e.stopPropagation()
-        showCompose = false
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = prevOverflow
-    }
-  })
-
-  function closeComposeOnBackdrop(e: MouseEvent) {
-    if (e.target === e.currentTarget) showCompose = false
+  function closeCompose() {
+    showCompose = false
   }
 </script>
 
@@ -343,30 +326,28 @@
   </button>
 
   {#if showCompose}
-    <div
-      class="compose-overlay"
-      role="presentation"
-      onclick={closeComposeOnBackdrop}
-    >
+    <div class="compose-overlay" role="presentation" use:scrollLock>
       <div
         class="compose-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="compose-modal-title"
         use:focusTrap
+        use:escapeKey={closeCompose}
+        use:outsideClick={closeCompose}
       >
         <div class="compose-modal-header">
           <span id="compose-modal-title" class="compose-modal-title">{L.composeTitle}</span>
           <button
             type="button"
             class="compose-close-btn"
-            onclick={() => { showCompose = false }}
+            onclick={closeCompose}
             aria-label={L.actionClose}
           >
             <iconify-icon icon="tabler:x"></iconify-icon>
           </button>
         </div>
-        <PostForm onPosted={() => { showCompose = false }} />
+        <PostForm onPosted={closeCompose} />
       </div>
     </div>
   {/if}
