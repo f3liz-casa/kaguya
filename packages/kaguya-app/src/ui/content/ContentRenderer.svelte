@@ -1,34 +1,55 @@
 <!--
   SPDX-License-Identifier: MPL-2.0
 
-  Svelte port of ContentRenderer.tsx, restricted to the parseSimple
-  subset. Surface: { text, parseSimple: true } — full MFM (parse()),
-  HTML, Bluesky facets, and emoji image rendering are deferred to M4
-  where the PostForm port lands the full pipeline.
+  Svelte port of ContentRenderer.tsx. Drop-in replacement for the
+  parseSimple-only subset that landed in M1 part 5a — now full
+  surface ({ text, contentType?, parseSimple?, contextHost?, facets? })
+  matching the Preact API, dispatching parsers (fromMfm / fromHtml /
+  fromFacets) and rendering through SocialRenderer.
 
-  parseSimple nodes are limited to: text / unicodeEmoji / emojiCode /
-  mention / hashtag. emojiCode falls back to ":name:" span — identical
-  to the Preact implementation's fallback path when the emoji store
-  has not yet resolved the URL, so behavior is preserved (no feature
-  regression at mount swap).
+  Element tag (`<span>` vs `<div>`) tracks parseSimple, same as the
+  Preact original — inline contexts keep span semantics.
 -->
 
 <script lang="ts">
+  import type { ContentType } from '../../domain/note/noteView'
+  import type { BlueskyFacet } from './fromFacets'
+  import type { FetchPriority } from '../../infra/fetchQueue'
+  import { fromMfm } from './fromMfm'
+  import { fromHtml } from './fromHtml'
+  import { fromFacets } from './fromFacets'
+  import SocialRenderer from './SocialRenderer.svelte'
+  import { instanceName } from '../../domain/auth/appState'
   import * as mfm from 'mfm-js'
+  import { svelteSignal } from '../svelteSignal.svelte'
 
-  type Props = { text: string; parseSimple: true }
-  let { text }: Props = $props()
+  type Props = {
+    text: string
+    contentType?: ContentType
+    parseSimple?: boolean
+    contextHost?: string
+    facets?: BlueskyFacet[]
+  }
+  let { text, contentType = 'mfm', parseSimple = false, contextHost, facets }: Props = $props()
 
-  const nodes = $derived(mfm.parseSimple(text))
+  const instanceR = svelteSignal(instanceName)
+  const ctxHost = $derived(contextHost ?? instanceR.value)
+  const priority = $derived<FetchPriority>(parseSimple ? 3 : 1)
+
+  const nodes = $derived.by(() => {
+    if (contentType === 'mfm') {
+      const parsed = parseSimple ? mfm.parseSimple(text) : mfm.parse(text)
+      return fromMfm(parsed as Parameters<typeof fromMfm>[0])
+    }
+    if (contentType === 'html') {
+      return fromHtml(text)
+    }
+    return fromFacets(text, facets ?? [])
+  })
 </script>
 
-<span class="mfm-content">
-  {#each nodes as node}
-    {#if node.type === 'text'}{node.props.text}
-    {:else if node.type === 'unicodeEmoji'}{node.props.emoji}
-    {:else if node.type === 'emojiCode'}<span class="mfm-emoji-code">:{node.props.name}:</span>
-    {:else if node.type === 'mention'}<a class="mfm-mention" href={`/@${node.props.acct}`}>@{node.props.username}{#if node.props.host}@{node.props.host}{/if}</a>
-    {:else if node.type === 'hashtag'}<a class="mfm-hashtag" href={`/tags/${node.props.hashtag}`}>#{node.props.hashtag}</a>
-    {/if}
-  {/each}
-</span>
+{#if parseSimple}
+  <span class="mfm-content"><SocialRenderer {nodes} contextHost={ctxHost} {priority} /></span>
+{:else}
+  <div class="mfm-content"><SocialRenderer {nodes} contextHost={ctxHost} {priority} /></div>
+{/if}
